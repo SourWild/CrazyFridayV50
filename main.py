@@ -43,19 +43,48 @@ def main() -> None:
 
     if args.model_type == "lstm":
         from nerual_network_lstm import PolicyNetwork, ValueNetwork
+        model_id = "lstm"
     else:
         from nerual_network_trans import PolicyNetwork, ValueNetwork
+        model_id = "trans"
 
     config = PPOConfig()
+
     if args.total_timesteps is not None:
         config.total_timesteps = args.total_timesteps
     if args.seed is not None:
         config.seed = args.seed
 
+    if model_id == "lstm":
+        policy_kwargs = {"lstm_hidden_size": config.lstm_hidden_size}
+        value_kwargs = {"lstm_hidden_size": config.lstm_hidden_size}
+    else:
+        policy_kwargs = {
+            "seq_len": config.sequence_length,
+            "embed_dim": config.transformer_embed_dim,
+            "num_heads": config.transformer_num_heads,
+            "num_layers": config.transformer_num_layers,
+            "dropout": config.transformer_dropout,
+        }
+        value_kwargs = {
+            "seq_len": config.sequence_length,
+            "embed_dim": config.transformer_embed_dim,
+            "num_heads": config.transformer_num_heads,
+            "num_layers": config.transformer_num_layers,
+            "dropout": config.transformer_dropout,
+        }
+
     base_dir = os.path.dirname(os.path.abspath(__file__))
     xml_path = os.path.join(base_dir, "Fencing_agent&obstacle_description", "fencing_arm_ver3.xml")
     env = ObstacleEnv(xml_path=xml_path, obstacle_mode=args.obstacle_mode, render_mode=None)
-    trainer = PPOTrainer(env, config, PolicyNetwork, ValueNetwork)
+    trainer = PPOTrainer(
+        env,
+        config,
+        PolicyNetwork,
+        ValueNetwork,
+        policy_kwargs=policy_kwargs,
+        value_kwargs=value_kwargs,
+    )
     trainer.train()
 
 if __name__ == "__main__":

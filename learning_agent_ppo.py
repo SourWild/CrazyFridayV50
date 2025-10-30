@@ -2,7 +2,7 @@ import math
 import time
 from dataclasses import dataclass
 from collections import deque
-from typing import Deque, Optional, Tuple
+from typing import Any, Deque, Dict, Optional, Tuple
 
 import numpy as np
 import torch
@@ -26,12 +26,26 @@ class PPOConfig:
     hidden_dims: Tuple[int, ...] = (256,)
     sequence_length: int = 10
     lstm_hidden_size: int = 256
+    transformer_embed_dim: int = 128
+    transformer_num_heads: int = 4
+    transformer_num_layers: int = 2
+    transformer_dropout: float = 0.1
     seed: int = 42
 
 class PPOTrainer:
-    def __init__(self, env, config: PPOConfig, PolicyNetwork, ValueNetwork):
+    def __init__(
+        self,
+        env,
+        config: PPOConfig,
+        PolicyNetwork,
+        ValueNetwork,
+        policy_kwargs: Optional[Dict[str, Any]] = None,
+        value_kwargs: Optional[Dict[str, Any]] = None,
+    ):
         self.env = env
         self.cfg = config
+        policy_kwargs = policy_kwargs or {}
+        value_kwargs = value_kwargs or {}
 
         torch.manual_seed(config.seed)
         np.random.seed(config.seed)
@@ -39,8 +53,8 @@ class PPOTrainer:
         obs_dim = env.observation_space.shape[0]
         act_dim = env.action_space.shape[0]
         self.device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
-        self.policy = PolicyNetwork(obs_dim, act_dim, config.hidden_dims, config.lstm_hidden_size).to(self.device)
-        self.value = ValueNetwork(obs_dim, config.hidden_dims, config.lstm_hidden_size).to(self.device)
+        self.policy = PolicyNetwork(obs_dim, act_dim, config.hidden_dims, **policy_kwargs).to(self.device)
+        self.value = ValueNetwork(obs_dim, config.hidden_dims, **value_kwargs).to(self.device)
         self.policy_optim = optim.Adam(self.policy.parameters(), lr=config.learning_rate)
         self.value_optim = optim.Adam(self.value.parameters(), lr=config.learning_rate)
 
