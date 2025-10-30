@@ -5,6 +5,7 @@ import torch.nn as nn
 
 
 def mlp(input_dim: int, hidden_dims: Tuple[int, ...], output_dim: int) -> nn.Sequential:
+    # Feedforward stack / 前馈层堆叠
     layers = []
     last_dim = input_dim
     for hidden_dim in hidden_dims:
@@ -28,8 +29,11 @@ class PolicyNetwork(nn.Module):
         dropout: float = 0.0,
     ):
         super().__init__()
-        self.seq_len = seq_len
+        # Input projection / 输入嵌入层
         self.input_proj = nn.Linear(obs_dim, embed_dim)
+        # Positional encoding / 位置编码
+        self.pos_embedding = nn.Parameter(torch.zeros(1, seq_len, embed_dim))
+        # Transformer encoder / Transformer 编码器
         encoder_layer = nn.TransformerEncoderLayer(
             d_model=embed_dim,
             nhead=num_heads,
@@ -39,23 +43,28 @@ class PolicyNetwork(nn.Module):
             activation="gelu",
         )
         self.encoder = nn.TransformerEncoder(encoder_layer, num_layers=num_layers)
-        self.pos_embedding = nn.Parameter(torch.zeros(1, seq_len, embed_dim))
+        # Policy head / 策略输出头
         self.net = mlp(embed_dim, hidden_dims, act_dim)
+        # Log-std parameter / 对数标准差
         self.log_std = nn.Parameter(torch.zeros(act_dim))
 
     def forward(self, obs_seq: torch.Tensor) -> Tuple[torch.Tensor, torch.Tensor]:
+        # Sequence check / 检查输入维度
         if obs_seq.dim() != 3:
             raise ValueError("obs_seq must be of shape (batch, seq_len, obs_dim)")
+        # Encode sequence / 序列编码
         x = self.input_proj(obs_seq)
         pos = self.pos_embedding[:, : x.size(1)]
         x = x + pos
         features = self.encoder(x)
         pooled = features[:, -1, :]
+        # Head / 输出均值
         mean = self.net(pooled)
         log_std = self.log_std.expand_as(mean)
         return mean, log_std
 
     def sample(self, obs_seq: torch.Tensor):
+        # Sample with Tanh / 采样动作并压缩
         mean, log_std = self.forward(obs_seq)
         std = torch.exp(log_std)
         normal = torch.distributions.Normal(mean, std)
@@ -68,6 +77,7 @@ class PolicyNetwork(nn.Module):
         return action, log_prob, entropy
 
     def evaluate(self, obs_seq: torch.Tensor, actions: torch.Tensor):
+        # Evaluate for PPO / 评估 PPO 对数概率
         mean, log_std = self.forward(obs_seq)
         std = torch.exp(log_std)
         normal = torch.distributions.Normal(mean, std)
@@ -91,8 +101,9 @@ class ValueNetwork(nn.Module):
         dropout: float = 0.0,
     ):
         super().__init__()
-        self.seq_len = seq_len
+        # Shared embedding / 共享嵌入
         self.input_proj = nn.Linear(obs_dim, embed_dim)
+        self.pos_embedding = nn.Parameter(torch.zeros(1, seq_len, embed_dim))
         encoder_layer = nn.TransformerEncoderLayer(
             d_model=embed_dim,
             nhead=num_heads,
@@ -102,10 +113,11 @@ class ValueNetwork(nn.Module):
             activation="gelu",
         )
         self.encoder = nn.TransformerEncoder(encoder_layer, num_layers=num_layers)
-        self.pos_embedding = nn.Parameter(torch.zeros(1, seq_len, embed_dim))
+        # Value head / 价值头
         self.net = mlp(embed_dim, hidden_dims, 1)
 
     def forward(self, obs_seq: torch.Tensor) -> torch.Tensor:
+        # Encode then regress value / 编码后回归价值
         if obs_seq.dim() != 3:
             raise ValueError("obs_seq must be of shape (batch, seq_len, obs_dim)")
         x = self.input_proj(obs_seq)
