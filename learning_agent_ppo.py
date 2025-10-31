@@ -10,6 +10,41 @@ import torch.nn as nn
 import torch.optim as optim
 
 
+class RunningMeanStd:
+    def __init__(self, shape):
+        self.mean = np.zeros(shape, dtype=np.float64)
+        self.var = np.ones(shape, dtype=np.float64)
+        self.count = 1e-4
+
+    def update(self, x: np.ndarray) -> None:
+        x = np.asarray(x, dtype=np.float64)
+        if x.ndim == 0:
+            x = x.reshape(1)
+        elif x.ndim == 1:
+            x = x.reshape(1, -1)
+        batch_mean = np.mean(x, axis=0)
+        batch_var = np.var(x, axis=0)
+        batch_count = x.shape[0]
+        self._update_from_moments(batch_mean, batch_var, batch_count)
+
+    def _update_from_moments(self, batch_mean, batch_var, batch_count) -> None:
+        if batch_count == 0:
+            return
+        delta = batch_mean - self.mean
+        tot_count = self.count + batch_count
+        new_mean = self.mean + delta * batch_count / tot_count
+        m_a = self.var * self.count
+        m_b = batch_var * batch_count
+        m2 = m_a + m_b + np.square(delta) * self.count * batch_count / tot_count
+        new_var = m2 / tot_count
+        self.mean = new_mean
+        self.var = np.maximum(new_var, 1e-12)
+        self.count = tot_count
+
+    def std(self) -> np.ndarray:
+        return np.sqrt(self.var + 1e-8)
+
+
 @dataclass
 class PPOConfig:
     total_timesteps: int = 600_000
@@ -58,6 +93,9 @@ class PPOTrainer:
         self.policy_optim = optim.Adam(self.policy.parameters(), lr=config.learning_rate)
         self.value_optim = optim.Adam(self.value.parameters(), lr=config.learning_rate)
 
+        self.obs_rms = RunningMeanStd(shape=(obs_dim,))
+        self.reward_rms = RunningMeanStd(shape=())
+
         self.obs_buf = np.zeros((config.rollout_steps, config.sequence_length, obs_dim), dtype=np.float32)
         self.actions_buf = np.zeros((config.rollout_steps, act_dim), dtype=np.float32)
         self.rewards_buf = np.zeros(config.rollout_steps, dtype=np.float32)
@@ -70,9 +108,21 @@ class PPOTrainer:
         self.completed_ep_rewards_separate = []
         self.obs_window: Optional[Deque[np.ndarray]] = None
 
-    def _init_obs_window(self, obs: np.ndarray) -> None:
+    def _init_obs_window(self, norm_obs: np.ndarray) -> None:
+        norm_obs = norm_obs.astype(np.float32)
+        self.obs_window = deque([norm_obs.copy() for _ in range(self.cfg.sequence_length)], maxlen=self.cfg.sequence_length)
+
+    def _update_and_normalize_obs(self, obs: np.ndarray) -> np.ndarray:
         obs = obs.astype(np.float32)
-        self.obs_window = deque([obs.copy() for _ in range(self.cfg.sequence_length)], maxlen=self.cfg.sequence_length)
+        self.obs_rms.update(obs[None, :])
+        norm = (obs - self.obs_rms.mean) / self.obs_rms.std()
+        return np.clip(norm, -10.0, 10.0).astype(np.float32)
+
+    def _normalize_reward(self, reward: float) -> float:
+        scale = float(self.reward_rms.std())
+        norm_reward = reward / (scale if scale > 1e-6 else 1.0)
+        self.reward_rms.update(np.array([reward], dtype=np.float32))
+        return float(norm_reward)
 
 
     def collect_rollout(self, start_obs: np.ndarray) -> Tuple[np.ndarray, bool, bool, bool]:
@@ -101,16 +151,18 @@ class PPOTrainer:
 
             self.obs_buf[step] = obs_seq
             self.actions_buf[step] = action
-            self.rewards_buf[step] = reward
+            norm_reward = self._normalize_reward(float(reward))
+            self.rewards_buf[step] = norm_reward
             self.dones_buf[step] = float(done)
             self.values_buf[step] = value
             self.logprobs_buf[step] = log_prob
-            self.running_ep_reward += reward
+            self.running_ep_reward += float(reward)
             self.running_ep_reward_separate = self.running_ep_reward_separate + info["R_separate"]
 
             next_obs = next_obs.astype(np.float32)
-            self.obs_window.append(next_obs)
-            obs = next_obs
+            norm_next_obs = self._update_and_normalize_obs(next_obs)
+            self.obs_window.append(norm_next_obs)
+            obs = norm_next_obs
             if done:
                 self.completed_ep_rewards.append(self.running_ep_reward)
                 self.running_ep_reward = 0.0
@@ -118,7 +170,9 @@ class PPOTrainer:
                 self.running_ep_reward_separate = np.array([0, 0, 0, 0, 0, 0])
                 obs, _ = self.env.reset()
                 obs = obs.astype(np.float32)
-                self._init_obs_window(obs)
+                norm_reset_obs = self._update_and_normalize_obs(obs)
+                self._init_obs_window(norm_reset_obs)
+                obs = norm_reset_obs
         return obs, done, last_terminated, last_truncated
 
     def compute_gae(self, next_value: np.ndarray, last_done: bool) -> Tuple[np.ndarray, np.ndarray]:
@@ -185,7 +239,9 @@ class PPOTrainer:
     def train(self) -> None:
         obs, _ = self.env.reset(seed=self.cfg.seed)
         obs = obs.astype(np.float32)
-        self._init_obs_window(obs)
+        norm_obs = self._update_and_normalize_obs(obs)
+        self._init_obs_window(norm_obs)
+        obs = norm_obs
         total_updates = math.ceil(self.cfg.total_timesteps / self.cfg.rollout_steps)
         for update in range(1, total_updates + 1):
             start_time = time.time()
