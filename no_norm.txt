@@ -1,0 +1,806 @@
+    1  nvidia-smi
+    2  sudo apt update
+    3  sudo apt install nvidia-driver-535 nvidia-utils-535
+    4  sudo reboot
+    5  nvidia-smi
+    6  nvcc --version
+    7  sudo apt install nvidia-cuda-toolkit
+    8  sudo apt install wget curl git build-essential python3-pip
+    9  wget https://developer.nvidia.com/omniverse/omniverse-launcher-linux
+   10  sudo apt install -y docker.io
+   11  sudo systemctl enable --now docker
+   12  sudo usermod -aG docker $USER
+   13  distribution=$(. /etc/os-release;echo $ID$VERSION_ID)
+   14  curl -s -L https://nvidia.github.io/nvidia-docker/gpgkey | sudo apt-key add -
+   15  curl -s -L https://nvidia.github.io/nvidia-docker/$distribution/nvidia-docker.list | sudo tee /etc/apt/sources.list.d/nvidia-docker.list
+   16  sudo apt update
+   17  sudo apt install -y nvidia-docker2
+   18  sudo systemctl restart docker
+   19  pwd
+   20  git clone https://github.com/NVIDIA-Omniverse/IsaacSim-dockerfiles.git
+   21  cd IsaacSim-dockerfiles/
+   22  pwd
+   23  docker login nvcr.io
+   24  docker build --pull -t   isaac-sim:2023.1.0-ubuntu22.04   --build-arg ISAACSIM_VERSION=2023.1.0   --file Dockerfile.2023.1.0-ubuntu22.04 .
+   25  sudo usermod -aG docker $USER
+   26  docker run hello-world
+   27  groups $USER
+   28  docker run hello-world
+   29  sudo systemctl enable --now docker
+   30  docker run hello-world
+   31  sudo systemctl status docker
+   32  ls -l /var/run/docker.sock
+   33  docker run hello-world
+   34  sudo docker run hello-world
+   35  groups
+   36  sudo usermod -aG docker $USER
+   37  groups
+   38  whoami
+   39  sudo usermod -aG docker tqz
+   40  sudo docker run hello-world
+   41  groups
+   42  getent gourp docker
+   43  sudo usermod -aG docker tqz
+   44  getent group docker
+   45  groups
+   46  grep docker /etc/group
+   47  groups
+   48  sudo reboot
+   49  groups
+   50  docker run hello-world
+   51  cd IsaacSim-dockerfiles/
+   52  docker login nvcr.io
+   53  docker build --pull -t   isaac-sim:2023.1.0-ubuntu22.04   --build-arg ISAACSIM_VERSION=2023.1.0   --file Dockerfile.2023.1.0-ubuntu22.04 .
+   54  docker login nvcr.io
+   55  echo "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" | docker login nvcr.io -u "1019898748@qq.com" --password-stdin
+   56  docker login nvcr.io
+   57  docker build --pull -t   isaac-sim:2023.1.0-ubuntu22.04   --build-arg ISAACSIM_VERSION=2023.1.0   --file Dockerfile.2023.1.0-ubuntu22.04 .
+   58  watch -n 1 nvidia-smi
+   59  nvidia -smi
+   60  nvidia-smi
+   61  cd IsaacSim-dockerfiles/
+   62  cat ~/.docker/config.json | grep nvcr.io
+   63  docker images
+   64  docker ps -a
+   65  docker build --pull -t   isaac-sim:2023.1.0-ubuntu22.04   --build-arg ISAACSIM_VERSION=2023.1.0   --file Dockerfile.2023.1.0-ubuntu22.04 .
+   66  [200~xhost +
+   67  docker run --name isaac-sim --entrypoint bash -it --gpus all -e "ACCEPT_EULA=Y" --rm --network=host   -e "PRIVACY_CONSENT=Y"   -v $HOME/.Xauthority:/root/.Xauthority   -e DISPLAY   -v ~/docker/isaac-sim/cache/kit:/isaac-sim/kit/cache:rw   -v ~/docker/isaac-sim/cache/ov:/root/.cache/ov:rw   -v ~/docker/isaac-sim/cache/pip:/root/.cache/pip:rw   -v ~/docker/isaac-sim/cache/glcache:/root/.cache/nvidia/GLCache:rw   -v ~/docker/isaac-sim/cache/computecache:/root/.nv/ComputeCache:rw   -v ~/docker/isaac-sim/logs:/root/.nvidia-omniverse/logs:rw   -v ~/docker/isaac-sim/data:/root/.local/share/ov/data:rw   -v ~/docker/isaac-sim/documents:/root/Documents:rw   isaac-sim:2023.1.0-ubuntu22.04   ./runapp.sh~
+   68  xhost +
+   69  docker run --name isaac-sim --entrypoint bash -it --gpus all -e "ACCEPT_EULA=Y" --rm --network=host   -e "PRIVACY_CONSENT=Y"   -v $HOME/.Xauthority:/root/.Xauthority   -e DISPLAY   -v ~/docker/isaac-sim/cache/kit:/isaac-sim/kit/cache:rw   -v ~/docker/isaac-sim/cache/ov:/root/.cache/ov:rw   -v ~/docker/isaac-sim/cache/pip:/root/.cache/pip:rw   -v ~/docker/isaac-sim/cache/glcache:/root/.cache/nvidia/GLCache:rw   -v ~/docker/isaac-sim/cache/computecache:/root/.nv/ComputeCache:rw   -v ~/docker/isaac-sim/logs:/root/.nvidia-omniverse/logs:rw   -v ~/docker/isaac-sim/data:/root/.local/share/ov/data:rw   -v ~/docker/isaac-sim/documents:/root/Documents:rw   isaac-sim:2023.1.0-ubuntu22.04   ./runapp.sh
+   70  xhost +
+   71  docker run --name isaac-sim --entrypoint bash -it --gpus all -e "ACCEPT_EULA=Y" --rm --network=host   -e "PRIVACY_CONSENT=Y"   -v $HOME/.Xauthority:/root/.Xauthority   -e DISPLAY   -v ~/docker/isaac-sim/cache/kit:/isaac-sim/kit/cache:rw   -v ~/docker/isaac-sim/cache/ov:/root/.cache/ov:rw   -v ~/docker/isaac-sim/cache/pip:/root/.cache/pip:rw   -v ~/docker/isaac-sim/cache/glcache:/root/.cache/nvidia/GLCache:rw   -v ~/docker/isaac-sim/cache/computecache:/root/.nv/ComputeCache:rw   -v ~/docker/isaac-sim/logs:/root/.nvidia-omniverse/logs:rw   -v ~/docker/isaac-sim/data:/root/.local/share/ov/data:rw   -v ~/docker/isaac-sim/documents:/root/Documents:rw   isaac-sim:2023.1.0-ubuntu22.04   ./runapp.sh
+   72  nvidia-smi
+   73  docker run --name isaac-sim --entrypoint bash -it --gpus all -e "ACCEPT_EULA=Y" --rm --network=host   -e "PRIVACY_CONSENT=Y"   -v ~/docker/isaac-sim/cache/kit:/isaac-sim/kit/cache:rw   -v ~/docker/isaac-sim/cache/ov:/root/.cache/ov:rw   -v ~/docker/isaac-sim/cache/pip:/root/.cache/pip:rw   -v ~/docker/isaac-sim/cache/glcache:/root/.cache/nvidia/GLCache:rw   -v ~/docker/isaac-sim/cache/computecache:/root/.nv/ComputeCache:rw   -v ~/docker/isaac-sim/logs:/root/.nvidia-omniverse/logs:rw   -v ~/docker/isaac-sim/data:/root/.local/share/ov/data:rw   -v ~/docker/isaac-sim/documents:/root/Documents:rw   isaac-sim:2023.1.0-ubuntu22.04   ./runheadless.native.sh -v
+   74  rm -rf ~/docker/isaac-sim/cache/kit/*
+   75  rm -rf ~/docker/isaac-sim/cache/ov/*
+   76  docker run --name isaac-sim --entrypoint bash -it --gpus all -e "ACCEPT_EULA=Y" --rm --network=host   -e "PRIVACY_CONSENT=Y"   -v ~/docker/isaac-sim/cache/kit:/isaac-sim/kit/cache:rw   -v ~/docker/isaac-sim/cache/ov:/root/.cache/ov:rw   -v ~/docker/isaac-sim/cache/pip:/root/.cache/pip:rw   -v ~/docker/isaac-sim/cache/glcache:/root/.cache/nvidia/GLCache:rw   -v ~/docker/isaac-sim/cache/computecache:/root/.nv/ComputeCache:rw   -v ~/docker/isaac-sim/logs:/root/.nvidia-omniverse/logs:rw   -v ~/docker/isaac-sim/data:/root/.local/share/ov/data:rw   -v ~/docker/isaac-sim/documents:/root/Documents:rw   isaac-sim:2023.1.0-ubuntu22.04   ./runheadless.native.sh -v
+   77  rm -rf ~/docker/isaac-sim/cache/kit/*
+   78  rm -rf ~/docker/isaac-sim/cache/ov/*
+   79  rm -rf ~/docker/isaac-sim/cache/pip/*
+   80  rm -rf ~/docker/isaac-sim/cache/glcache/*
+   81  rm -rf ~/docker/isaac-sim/cache/computecache/*
+   82  sudo rm -rf ~/docker/issac-sim/cache/*
+   83  docker run --rm -it --gpus all issac-sim:2023.1.0-ubuntu22.04 bash
+   84  ls -l ~/docker/issac-sim/cache
+   85  docker run --rm -it --gpus all isaac-sim:2023.1.0-ubuntu22.04 bash
+   86  docker run --rm -it --gpus all -e "ACCEPT_EULA=Y" -e "PRIVACY_CONSENT=Y" isaac-sim:2023.1.0-ubuntu22.04 bash
+   87  rm -rf ~/.nvidia-omniverse/logs/Kit/Issac-Sim/
+   88  rm -rf ~/.cache/warp/
+   89  source /opt/ros/humble/setup.bash
+   90  export RMW_IMPLEMENTATION=rmw_fastrtps_cpp
+   91  export LD_LIBRARY_PATH=$LD_LIBRARY_PATH:/isaac-sim/exts/omni.isaac.ros2_bridge/humble/lib
+   92  sudo rm -rf ~/docker/issac-sim/cache/*
+   93  docker run --name isaac-sim --entrypoint bash -it --gpus all -e "ACCEPT_EULA=Y" --rm --network=host   -e "PRIVACY_CONSENT=Y"   -v ~/docker/isaac-sim/cache/kit:/isaac-sim/kit/cache:rw   -v ~/docker/isaac-sim/cache/ov:/root/.cache/ov:rw   -v ~/docker/isaac-sim/cache/pip:/root/.cache/pip:rw   -v ~/docker/isaac-sim/cache/glcache:/root/.cache/nvidia/GLCache:rw   -v ~/docker/isaac-sim/cache/computecache:/root/.nv/ComputeCache:rw   -v ~/docker/isaac-sim/logs:/root/.nvidia-omniverse/logs:rw   -v ~/docker/isaac-sim/data:/root/.local/share/ov/data:rw   -v ~/docker/isaac-sim/documents:/root/Documents:rw   isaac-sim:2023.1.0-ubuntu22.04   ./runheadless.native.sh -v
+   94  sudo apt-get install ./todesk-v4.7.2.0-amd64.deb
+   95  sudo apt install xrdp
+   96  sudo systemctl enable xrdp --now
+   97  hostname -I
+   98  systemctl status xrdp
+   99  curl -fsSL https://tailscale.com/install.sh | sh
+  100  sudo tailscale up
+  101  tailscale ip -4
+  102  sudo passwd tqz
+  103  sudo nano /etc/gdm3/custom.conf
+  104  sudo systemctl restart gdm3
+  105  sudo nano /etc/gdm3/custom.conf
+  106  sudo systemctl restart gdm3
+  107  sudo nano /etc/gdm3/custom.conf
+  108  sudo systemctl restart gdm3
+  109  sudo nano /etc/gdm3/custom.conf
+  110  sudo systemctl stop xrdp
+  111  sudo systemctl disable xrdp
+  112  sudo apt remove --purge xrdp -y
+  113  sudo nano /etc/xrdp/startwm.sh
+  114  sudo apt remove --purge xfce4 xfce4-goodies -y
+  115  sudo apt autoremove -y
+  116  sudo reboot
+  117  sudo apt install xfce4 xfce4-goodies
+  118  sudo nano /etc/xrdp/startwm.sh
+  119  sudo systemctl restart xrdp
+  120  [200~sudo apt remove --purge xrdp xfce4 xfce4-goodies -y
+  121  sudo apt autoremove -y
+  122  [200~sudo apt remove --purge xrdp xfce4 xfce4-goodies -y
+  123  sudo apt autoremove -y
+  124  sudo apt remove --purge xrdp xfce4 xfce4-goodies -y
+  125  sudo apt autoremove -y
+  126  sudo sed -i 's/^WaylandEnable=false/#WaylandEnable=false/' /etc/gdm3/custom.conf
+  127  sudo apt install x11vnc -y
+  128  x11vnc -storepasswd
+  129  x11vnc -usepw -forever -display :0
+  130  xrandr
+  131  xrandr --output DP-1 --mode 1920x1080
+  132  xrandr --output DP-1 --mode 1920x1440
+  133  xrandr | grep "connected"
+  134  xrandr --output eDP-1 --mode 1920x1080
+  135  xrandr --output eDP-1 --mode 2048x1152
+  136  xrandr --output eDP-1 --mode 1920x1440
+  137  xrandr --output eDP-1 --mode 2048x1152
+  138  xrandr --output eDP-1 --mode 2560x1440
+  139  sudo apt install tigervnc-standalone-server tigervnc-common -y
+  140  vncpasswd
+  141  vncserver :1 -geometry 1920x1080 -depth 24
+  142  sudo apt install x11vnc -y
+  143  x11vnc -usepw -forever -display :0
+  144  sudo nano /etc/systemd/system/x11vnc.service
+  145  sudo systemctl daemon-reload
+  146  sudo systemctl enable x11vnc.service
+  147  systemctl status x11vnc.service
+  148  ss -tulpn | grep 5900
+  149  sudo nano /etc/systemd/system/x11vnc.service
+  150  sudo systemctl daemon-reexec
+  151  sudo systemctl restart x11vnc.service
+  152  systemctl status x11vnc.service
+  153  ss -tulpn | grep 5900
+  154  ps -ef | grep x11vnc
+  155  ss -tulpn } grep 5900
+  156  ss -tulpn | grep 5900
+  157  x11vnc -usepw -forever -display :0 -rfbport 5900 -listen 0.0.0.0
+  158  systemctl status x11vnc
+  159  sudo nano /etc/systemd/system/x11vnc.service
+  160  sudo systemctl daemon-reload
+  161  sudo systemctl restart x11vnc
+  162  sudo systemctl status x11vnc
+  163  ss -tulpn | grep 5900
+  164  sudo nano /etc/systemd/system/x11vnc.service
+  165  sudo systemctl daemon-reload
+  166  sudo systemctl restart x11vnc
+  167  ss -tulpn | grep 5900
+  168  echo $XDG_SESSION_TYPE
+  169  sudo x11vnc -auth /var/run/lightdm/root/:0 -forever -loop -noxdamage -repeat -rfbauth /home/tqz/.vnc/passwd -rfbport 5900 -display :0
+  170  sudo reboot
+  171  sudo apt install gdm3
+  172  sudo dpkg-reconfigure gdm3
+  173  sudo reboot
+  174  sudo nano etc/lightdm/lightdm.conf
+  175  cat /etc/X11/default-display-manager
+  176  sudo apt install xorg
+  177  sudo systemctl restart gdm3
+  178  sudo systemctl restart lightdm
+  179  cat /etc/X11/default-display-manager
+  180  dpkg -l | grep -E "gdm3|lightdm|sdd"
+  181  dpkg -l | grep -E "gdm3|lightdm|sddm"
+  182  sudo x11vnc -auth /home/tqz/.Xauthority -forever -loop -noxdamage -repeat -rfbauth /home/tqz/.vnc/passwd -rfbport 5900 -display :0
+  183  echo $DISPLAY
+  184  x11vnc -auth ~/.Xauthority -forever -loop -noxdamage -repeat -rfbauth ~/.vnc/passwd -rfbport 5900 -display :1
+  185  sudo nano /etc/systemd/system/x11vnc.service
+  186  sudo systemctl daemon-reload
+  187  sudo systemctl enable x11vnc
+  188  sudo systemctl restart x11vnc
+  189  sudo systemctl status x11vnc
+  190  ss -tulpn | grep 5900
+  191  sudo nano /etc/systemd/system/x11vnc.service
+  192  sudo systemctl enable x11vnc.service
+  193  sudo systemctl start x11vnc.service
+  194  systemctl status x11vnc
+  195  xrandr
+  196  xrandr --output eDP-1 --mode 2048x1152
+  197  xrandr --output eDP-1 --mode 2560x1440
+  198  sudo nano /etc/gdm3/custom.conf
+  199  sudo systemctl restart gdm3
+  200  whoami
+  201  wget https://download.nomachine.com/download/7.14/Linux/nomachine_7.14.2_amd64.deb
+  202  sudo dpkg -i nomachine_7.14*.deb
+  203  file nomachine_7.14*.deb
+  204  ls
+  205  rm nomachine_7.14.2_amd64.deb 
+  206  ls
+  207  cd ~
+  208  cd Downloads/
+  209  wget https://download.nomachine.com/download/7.14/Linux/nomachine_7.14.2_amd64.deb
+  210  ls
+  211  file nomachine_7.14.2_amd64.deb
+  212  rm ~/Downloads/nomachine_7.14.2_amd64.deb
+  213  wget https://www.nomachine.com/free/linux/64/deb -O nomachine_7.14.2_amd64.deb
+  214  ls
+  215  file nomachine_7.14.2_amd64.deb
+  216  sudo dpkg -i nomachine_7.14.2_amd64.deb
+  217  sudo apt-get install -f
+  218  sudo systemctl restart nxserver
+  219  systemctl status nxserver
+  220  sudo shutdown -h now
+  221  ls
+  222  chmod +x Anaconda3-2025.06-0-Linux-x86_64.sh
+  223  ./Anaconda3-2025.06-0-Linux-x86_64.sh
+  224  You can undo this by running `conda init --reverse $SHELL`? [yes|no]
+  225  [no] >>> 
+  226  conda init
+  227  /home/tqz/anaconda3/bin/conda init
+  228  source ~/.bashrc
+  229  conda --version
+  230  python --version
+  231  sudo apt install x2goserver x2goserver-xsession -y
+  232  sudo systemctl status x2goserver
+  233  sudo nano /etc/ssh/sshd_config
+  234  sudo systemctl restart  sshh
+  235  sudo systemctl restart ssh
+  236  ls
+  237  tar -xvf IsaacGym_Preview_4_Package.tar.gz 
+  238  conda create -n test5418 tensorflow=1.11.0 python=3.6
+  239  sudo apt install -fy ./rustdesk-<version>.deb
+  240  cd Downloads
+  241  sudo apt install -fy ./rustdesk-1.4.1-x86_64.deb 
+  242  nvidia-smi
+  243  sudo apt install nvidia-cuda-toolkit
+  244  nvcc -V
+  245  conda create -n issacgym python=3.8
+  246  conda env list
+  247  conda activate issacgym
+  248  pwd
+  249  ld
+  250  ls
+  251  cd Downloads
+  252  cd issacgym
+  253  ls
+  254  file issacgym
+  255  ls
+  256  file issacgym
+  257  cd isaacgym
+  258  cd python/
+  259  pip install -e
+  260  pip install -e .
+  261  cd ../examples
+  262  cd ../..
+  263  cd isaacgym/
+  264  ls
+  265  ls examples
+  266  ls
+  267  64;1;2;6;9;15;16;17;18;21;22;28c64;1;2;6;9;15;16;17;18;21;22;28c64;1;2;6;9;15;16;17;18;21;22;28c64;1;2;6;9;15;16;17;18;21;22;28c64;1;2;6;9;15;16;17;18;21;22;28c
+  268  64;1;2;6;9;15;16;17;18;21;22;28c64;1;2;6;9;15;16;17;18;21;22;28c64;1;2;6;9;15;16;17;18;21;22;28c64;1;2;6;9;15;16;17;18;21;22;28c64;1;2;6;9;15;16;17;18;21;22;28c64;1;2;6;9;15;16;17;18;21;22;28c64;1;2;6;9;15;16;17;18;21;22;28c64;1;2;6;9;15;16;17;18;21;22;28c64;1;2;6;9;15;16;17;18;21;22;28c64;1;2;6;9;15;16;17;18;21;22;28c64;1;2;6;9;15;16;17;18;21;22;28c64;1;2;6;9;15;16;17;18;21;22;28c64;1;2;6;9;15;16;17;18;21;22;28c64;1;2;6;9;15;16;17;18;21;22;28c64;1;2;6;9;15;16;17;18;21;22;28c64;1;2;6;9;15;16;17;18;21;22;28c64;1;2;6;9;15;16;17;18;21;22;28c64;1;2;6;9;15;16;17;18;21;22;28c64;1;2;6;9;15;16;17;18;21;22;28c64;1;2;6;9;15;16;17;18;21;22;28c64;1;2;6;9;15;16;17;18;21;22;28c64;1;2;6;9;15;16;17;18;21;22;28c64;1;2;6;9;15;16;17;18;21;22;28c64;1;2;6;9;15;16;17;18;21;22;28c64;1;2;6;9;15;16;17;18;21;22;28c64;1;2;6;9;15;16;17;18;21;22;28c64;1;2;6;9;15;16;17;18;21;22;28c64;1;2;6;9;15;16;17;18;21;22;28c64;1;2;6;9;15;16;17;18;21;22;28c64;1;2;6;9;15;16;17;18;21;22;28c64;1;2;6;9;15;16;17;18;21;22;28c64;1;2;6;9;15;16;17;18;21;22;28c64;1;2;6;9;15;16;17;18;21;22;28c64;1;2;6;9;15;16;17;18;21;22;28c64;1;2;6;9;15;16;17;18;21;22;28c64;1;2;6;9;15;16;17;18;21;22;28c64;1;2;6;9;15;16;17;18;21;22;28c64;1;2;6;9;15;16;17;18;21;22;28c64;1;2;6;9;15;16;17;18;21;22;28c64;1;2;6;9;15;16;17;18;21;22;28c64;1;2;6;9;15;16;17;18;21;22;28c64;1;2;6;9;15;16;17;18;21;22;28c64;1;2;6;9;15;16;17;18;21;22;28c64;1;2;6;9;15;16;17;18;21;22;28c64;1;2;6;9;15;16;17;18;21;22;28c64;1;2;6;9;15;16;17;18;21;22;28c64;1;2;6;9;15;16;17;18;21;22;28c64;1;2;6;9;15;16;17;18;21;22;28c64;1;2;6;9;15;16;17;18;21;22;28c64;1;2;6;9;15;16;17;18;21;22;28c64;1;2;6;9;15;16;17;18;21;22;28c64;1;2;6;9;15;16;17;18;21;22;28c64;1;2;6;9;15;16;17;18;21;22;28c64;1;2;6;9;15;16;17;18;21;22;28c64;1;2;6;9;15;16;17;18;21;22;28c64;1;2;6;9;15;16;17;18;21;22;28c64;1;2;6;9;15;16;17;18;21;22;28c
+  269  tailscale ip -4
+  270  sudo ufw status
+  271  ps aux | grep rustdesk
+  272  sudo ss -tulpn | grep rustdesk
+  273  sudo apt update
+  274  sudo apt install openssh-server
+  275  sudo systemctl enable ssh
+  276  sudo systemctl start ssh
+  277  sudo apt install xauth x11-apps
+  278  s
+  279  sudo apt install xterm-256color
+  280  echo %TERM
+  281  echo $TERM
+  282  sudo zypper in netease-cloud-music-gtk
+  283  /bin/bash -c "$(curl -fsSL https://raw.githubusercontent.com/Homebrew/install/HEAD/install.sh)"
+  284  brew LIST
+  285  brew list
+  286  sudo dpkg -i code_1.103.2-1755709794_amd64.deb 
+  287  sudo dpkg -i cursor_1.5.5_amd64.deb 
+  288  ls
+  289  tar -xf cisco-secure-client-linux64-5.1.8.122-predeploy-deb-k9.tar.gz
+  290  sudo dpkg -i cisco-secure-client-vpn_5.1.8.122_amd64.deb
+  291  brew help
+  292  /bin/bash -c "$(curl -fsSL https://raw.githubusercontent.com/Homebrew/install/HEAD/install.sh)"
+  293  brew help
+  294  echo 'eval "$(/home/linuxbrew/.linuxbrew/bin/brew shellenv)"' >> ~/.bashrc
+  295  eval "$(/home/linuxbrew/.linuxbrew/bin/brew shellenv)"
+  296  which brew
+  297  brew help
+  298  brew update
+  299  brew search vscode
+  300  brew search visual-studio-code
+  301  brew search code
+  302  brew search cursor
+  303  sudo apt install -y wget gpg apt-transport-https software-properties-common libx11-xcb1 libxcb-dri3-0 libasound2
+  304  wget https://downloader.cursor.sh/linux/deb -O cursor.deb
+  305  gnome-session-properties
+  306  mkdir -p ~/.config/systemd/user
+  307  nano ~/.config/systemd/user/rustdesk.service
+  308  which rustdesk
+  309  nano ~/.config/systemd/user/rustdesk.service
+  310  systemctl --user daemon-reload
+  311  systemctl --user enable rustdesk.service
+  312  systemctl --user start rustdesk.service
+  313  systemctl --user status rustdesk.service
+  314  [200~gsettings set org.gnome.desktop.interface cursor-size 24
+  315  gsettings get org.gnome.desktop.interface cursor-size
+  316  gsettings set org.gnome.desktop.interface cursor-size 28
+  317  gnome-shell --replace &
+  318  hpc
+  319  hpc gpu
+  320  ssh e1554031@atlas8.nus.edu.sg
+  321  ssh
+  322  ssh e1554031@atlas9.nus.edu.sg
+  323  ssh e1554031@vanda.nus.edu.sg
+  324  pwd
+  325  scp ~/Downloads/IsaacGym_Preview_4_Package.tar.gz e1554031@vanda.hpc.nus.edu:/home/svu/e1554031/
+  326  scp ~/Downloads/IsaacGym_Preview_4_Package.tar.gz e1554031@vanda.nus.edu.sg:/home/svu/e1554031/
+  327  ssh e1554031@u.nus.edu.sg
+  328  ssh e1554031@vanda.nus.edu.sg
+  329  dpkg -i cursor_1.5.
+  330  dpkg -i cursor_1.5.9_amd64.deb 
+  331  sudo dpkg -i cursor_1.5.9_amd64.deb 
+  332  ifconfig
+  333  conda --version
+  334  conda env list
+  335  conda activate ME5418
+  336  conda create -n ME5418 tensorflow=1.11.0 python=3.6
+  337  conda activate ME5418
+  338  pip list
+  339  pip install --user gym
+  340  pip install matplotlib
+  341  sudo update-grub
+  342  sudo efibootmgr
+  343  sudo nano /etc/default/grub
+  344  sudo update-grub
+  345  pwd
+  346  ls
+  347  cd github/
+  348  git clone git@github.com:ErmHuang/rl-project.git
+  349  ls
+  350  git clone https://github.com/ErmHuang/rl-project.git
+  351  ls
+  352  cd rl-project/
+  353  cd ..
+  354  git clone https://github.com/yymfromprc/ME5418-RL-in-a-robotic-arm.git
+  355  ls
+  356  cd ME5418-RL-in-a-robotic-arm/
+  357  cd ..
+  358  git clone https://github.com/gaoyilin1010/Autonomous_Fruit_Harvesting_Robot_by_DRL.git
+  359  sudo dpkg -i WeChatLinux_x86_64.deb 
+  360  ssh student@10.248.22.136
+  361  ls
+  362  cd week5
+  363  conda env list
+  364  conda activate ME5418
+  365  sudo apt install graphviz
+  366  pip install torchvision torchviz
+  367  sudo apt install openssh-server
+  368  sudo systemctl enable ssh
+  369  sudo systemctl start ssh
+  370  IPCONFIG
+  371  ifconfig
+  372  conda create -n pybullet python=3.10.18
+  373  conda activate pybullet
+  374  pip install numpy gymnasium pybullet
+  375  whoami
+  376  code .
+  377  conda activate pybullet
+  378  /home/tqz/anaconda3/envs/pybullet/bin/python /home/tqz/code/panda_pybullet_env.py
+  379  conda env list
+  380  conda activate pybullet
+  381  pip list
+  382  ifconfig
+  383  ls
+  384  pwd
+  385  cd ~/code
+  386  pwd
+  387  sudo apt update
+  388  sudo apt install mesa-utils mesa-vulkan-drivers libgl1-mesa-glx libgl1-mesa-dri
+  389  glxinfo | grep "OpenGL version"
+  390  lspci | grep VGA
+  391  __NV_PRIME_RENDER_OFFLOAD=1 __GLX_VENDOR_LIBRARY_NAME=nvidia python DRL/fencing_rl/envs/urdf_sw_pybullet_env.py --gui
+  392  __NV_PRIME_RENDER_OFFLOAD=1 __GLX_VENDOR_LIBRARY_NAME=nvidia python ~/code/DRL/fencing_rl/envs/urdf_sw_pybullet_env.py --gui
+  393  conda activate pybullet
+  394  __NV_PRIME_RENDER_OFFLOAD=1 __GLX_VENDOR_LIBRARY_NAME=nvidia python ~/code/DRL/fencing_rl/envs/urdf_sw_pybullet_env.py --gui
+  395  ifconfig
+  396  ip a
+  397  ifconfig
+  398  conda activate pybullet
+  399  conda activate pybullet
+  400  /home/tqz/anaconda3/envs/pybullet/bin/python /home/tqz/code/panda_pybullet_env.py
+  401  git clone https://github.com/SourWild/DRL.git
+  402  python DRL/fencing_rl/envs/urdf_sw_pybullet_env.py --gui
+  403  conda activate pybullet
+  404  python DRL/fencing_rl/envs/urdf_sw_pybullet_env.py --gui
+  405  __NV_PRIME_RENDER_OFFLOAD=1 __GLX_VENDOR_LIBRARY_NAME=nvidia python ~/code/DRL/fencing_rl/envs/urdf_sw_pybullet_env.py --gui
+  406  git branch
+  407  cd DRL
+  408  git branch
+  409  git pull origin master
+  410  /home/tqz/anaconda3/envs/pybullet/bin/python /home/tqz/code/DRL/fencing_rl/scripts/urdf_sw_gui_demo.py
+  411  __NV_PRIME_RENDER_OFFLOAD=1 __GLX_VENDOR_LIBRARY_NAME=nvidia python /home/tqz/code/DRL/fencing_rl/scripts/urdf_sw_gui_demo.py --gui
+  412  __NV_PRIME_RENDER_OFFLOAD=1 __GLX_VENDOR_LIBRARY_NAME=nvidia python /home/tqz/code/DRL/fencing_rl/scripts/urdf_sw_gui_demo.py
+  413  git pull origin master
+  414  git reset --hard
+  415  git pull origin master
+  416  __NV_PRIME_RENDER_OFFLOAD=1 __GLX_VENDOR_LIBRARY_NAME=nvidia python /home/tqz/code/DRL/fencing_rl/scripts/urdf_sw_gui_demo.py
+  417  python /home/tqz/code/DRL/fencing_rl/scripts/urdf_sw_gui_demo.py
+  418  __NV_PRIME_RENDER_OFFLOAD=1 __GLX_VENDOR_LIBRARY_NAME=nvidia python /home/tqz/code/DRL/fencing_rl/scripts/urdf_sw_gui_demo.py
+  419  __NV_PRIME_RENDER_OFFLOAD=1 __GLX_VENDOR_LIBRARY_NAME=nvidia python /home/tqz/code/DRL/fencing_rl/scripts/urdf_sw_record_offscreen.py
+  420  pip install imageio
+  421  __NV_PRIME_RENDER_OFFLOAD=1 __GLX_VENDOR_LIBRARY_NAME=nvidia python /home/tqz/code/DRL/fencing_rl/scripts/urdf_sw_record_offscreen.py
+  422  [200~pip install imageio[ffmpeg]
+  423  pip install imageio[ffmpeg]
+  424  __NV_PRIME_RENDER_OFFLOAD=1 __GLX_VENDOR_LIBRARY_NAME=nvidia python /home/tqz/code/DRL/fencing_rl/scripts/urdf_sw_record_offscreen.py
+  425  /home/tqz/anaconda3/envs/pybullet/bin/python /home/tqz/code/DRL/fencing_rl/envs/urdf_sw_pybullet_env.py
+  426  pip freeze > requirements.txt
+  427  __NV_PRIME_RENDER_OFFLOAD=1 __GLX_VENDOR_LIBRARY_NAME=nvidia python /home/tqz/code/DRL/fencing_rl/scripts/urdf_sw_gui_demo.py
+  428  cd ..
+  429  git clone git clone --branch tqz_branch --single-branch https://github.com/SourWild/DRL.git
+  430  git clone --branch tqz_branch --single-branch https://github.com/SourWild/DRL.git
+  431  __NV_PRIME_RENDER_OFFLOAD=1 __GLX_VENDOR_LIBRARY_NAME=nvidia python /home/tqz/code/DRL/fencing_rl/scripts/urdf_sw_gui_demo.py
+  432  __NV_PRIME_RENDER_OFFLOAD=1 __GLX_VENDOR_LIBRARY_NAME=nvidia python /home/tqz/code/DRL/fencing_rl/scripts/urdf_sw_record_offscreen.py
+  433  /home/tqz/anaconda3/envs/pybullet/bin/python /home/tqz/code/DRL/fencing_rl/envs/urdf_sw_pybullet_env.py
+  434  __NV_PRIME_RENDER_OFFLOAD=1 __GLX_VENDOR_LIBRARY_NAME=nvidia python /home/tqz/code/DRL/fencing_rl/scripts/urdf_sw_gui_demo.py
+  435  ls
+  436  cd DRL
+  437  ls
+  438  git add urdf-new/
+  439  git commit -m "upload new urdf file"
+  440  git config --global user.email "1019898748@qq.com"
+  441  __NV_PRIME_RENDER_OFFLOAD=1 __GLX_VENDOR_LIBRARY_NAME=nvidia python /home/tqz/code/DRL/fencing_rl/scripts/urdf_sw_gui_demo.py
+  442  ip -a
+  443  ip-a
+  444  ifconfig
+  445  sudo apt install openssh-server -y
+  446  sudo systemctl status ssh
+  447  sudo ufw status
+  448  conda activate drl_mujoco
+  449  /home/tqz/anaconda3/envs/drl_mujoco/bin/python /home/tqz/code/DRL_M/test.py
+  450  sudo rm -rf DrL_M
+  451  conda activate drl_mujoco
+  452  cd DRL_M
+  453  /home/tqz/anaconda3/envs/drl_mujoco/bin/python /home/tqz/code/DRL_M/Assignment1/scripts/demo_visualization.py
+  454  code ~/.bashrc
+  455  conda activate pybullet
+  456  conda activate base
+  457  conda create -n drl_mujoco python=3.10 -y
+  458  conda activate drl_mujoco
+  459  sudo apt update
+  460  sudo apt install -y libosmesa6-dev libgl1-mesa-glx libglfw3 patchelf
+  461  nano ~/.bashrc
+  462  gedit ~/.bashrc
+  463  pip install mujoco==3.1.6 gymnasium[mujoco] stable-baselines3 torch
+  464  code ~/.bashrc
+  465  source ~/.bashrc
+  466  conda activate drl_mujoco
+  467  conda create -y -n drl-mjcf python=3.11 && conda run -n drl-mjcf pip install --upgrade pip && conda run -n drl-mjcf pip install mujoco==3.2.6 mujoco-python-viewer gymnasium numpy
+  468  conda activate drl-mjcf
+  469  python DRL_M/Assignment1/view-mjcf.py
+  470  sudo apt update
+  471  sudo apt install mesa-utils mesa-va-drivers mesa-vulkan-drivers libgl1-mesa-dri
+  472  python DRL_M/Assignment1/view-mjcf.py
+  473  sudo apt install libosmesa6-dev libgl1-mesa-dev patchelf -y
+  474  export PYOPENGL_PLATFORM=osmesa
+  475  python DRL_M/Assignment1/view-mjcf.py
+  476  unset PYOPENGL_PLATFORM
+  477  export PYOPENGL_PLATFORM=egl
+  478  export MUJOCO_GL=egl
+  479  python DRL_M/Assignment1/view-mjcf.py
+  480  nvidia-smi
+  481  sudo apt update
+  482  sudo apt install --reinstall libgl1-mesa-dri libglx-mesa0 mesa-utils -y
+  483  sudo apt install --reinstall mesa-va-drivers mesa-vulkan-drivers -y
+  484  glxinfo | grep OpenGL
+  485  export __GLX_VENDOR_LIBRARY_NAME=nvidia
+  486  export LIBGL_ALWAYS_INDIRECT=0
+  487  glxinfo | grep OpenGL
+  488  sudo prime-select nvidia
+  489  sudo reboot
+  490  ls
+  491  mkdir -p ~/.mujoco
+  492  tar -xzf mujoco210-linux-x86_64.tar.gz -C ~/.mujoco
+  493  cd ~/
+  494  ls -l
+  495  ls -la
+  496  gedit ~/.bashrc
+  497  sudo apt-get update
+  498  sudo apt-get install -y libosmesa6-dev libgl1-mesa-glx libglfw3
+  499  gedit ~/.bashrc
+  500  source ~/.bashrc
+  501  gedit ~/.bashrc
+  502  sudo apt install libosmesa6-dev libgl1-mesa-glx libglfw3
+  503  cd ~/.mujoco/mujoco210/bin
+  504  ls
+  505  ls -a
+  506  cd ..
+  507  ls
+  508  ls -a
+  509  ls /model
+  510  cd model
+  511  ls
+  512  conda activate drl_mujoco
+  513  conda env list
+  514  conda activate drl-mjcf
+  515  /home/tqz/anaconda3/envs/drl_mujoco/bin/python /home/tqz/code/DRL_M/Assignment1/trans-mjcf.py
+  516  cd DRL_M/Assignment1/
+  517  python -m mujoco_py.tools.urdf2mjcf /home/tqz/code/DRL_M/Fencing_arm_description/urdf/Fencing_arm_description.urdf
+  518  pip install mujoco-py
+  519  python -m mujoco_py.tools.urdf2mjcf /home/tqz/code/DRL_M/Fencing_arm_description/urdf/Fencing_arm_description.urdf
+  520  pip list
+  521  pip install mujoco
+  522  python -m mujoco_py.tools.urdf2mjcf /home/tqz/code/DRL_M/Fencing_arm_description/urdf/Fencing_arm_description.urdf
+  523  python -c "import mujoco_py; print(mujoco_py.__version__)"
+  524  conda activate base
+  525  conda activate drl-mjcf
+  526  export LD_LIBRARY_PATH=$LD_LIBRARY_PATH:/home/tqz/.mujoco/mujoco210/bin
+  527  export MUJOCO_PY_MUJOCO_PATH=/home/tqz/.mujoco/mujoco210
+  528  python -c "import mujoco_py; print(mujoco_py.__version__)"
+  529  conda create -n drl-mjcf38 python=3.10
+  530  conda activate drl-mjcf38
+  531  pip install mujoco_py
+  532  sudo apt-get install libosmesa6-dev libgl1-mesa-glx libglfw3
+  533  python -c "import mujoco_py; print(mujoco_py.__version__)"
+  534  export MUJOCO_PY_MUJOCO_PATH=$HOME/.mujoco/mujoco210
+  535  export LD_LIBRARY_PATH=$LD_LIBRARY_PATH:$HOME/.mujoco/mujoco210/bin
+  536  python -c "import mujoco_py; print(mujoco_py.__version__)"
+  537  conda env list
+  538  conda remove --name drl-mjcf38 --all
+  539  conda activate base
+  540  conda remove --name drl-mjcf38 --all
+  541  conda activate -n urdf2mjcf python=3.8
+  542  conda create -n urdf2mjcf python=3.8
+  543  conda activate urdf2mjcf
+  544  pip3 install -U 'mujoco-py<2.2,>=2.1'
+  545  pip install mujoco
+  546  pip install gym
+  547  cd ~/.mujoco/mujoco210/bin
+  548  ./simulate ../model/humanoid.xml
+  549  pip install gym]
+  550  pip install mujoco
+  551  puthon -m mujoco.viewer
+  552  python -m mujoco.viewer
+  553  conda activate drl-mjcf
+  554  python ~/home/tqz/code/DRL_M/Assignment1/view-mjcf.py
+  555  /home/tqz/anaconda3/envs/drl-mjcf/bin/python /home/tqz/code/DRL_M/Assignment1/view-mjcf.py
+  556  /home/tqz/anaconda3/envs/drl-mjcf/bin/python /home/tqz/code/DRL_M/Assignment1/envs/move.py
+  557  conda activate drl-mjcf
+  558  glxinfo | grep OpenGL
+  559  python DRL_M/Assignment1/view-mjcf.py
+  560  ~/.config/Cursor
+  561  cd ~/.config
+  562  ls
+  563  condaconda activate drl-mjcf
+  564  conda activate drl-mjcf
+  565  /home/tqz/anaconda3/envs/drl-mjcf/bin/python /home/tqz/code/DRL_M/Assignment1/envs/move.py
+  566  check_urdf DRL_M/Fencing_arm_description/urdf/Fencing_arm_description.urdf
+  567  sudo apt install libosmesa6-dev libgl1-mesa-glx libglfw3
+  568  check_urdf DRL_M/Fencing_arm_description/urdf/Fencing_arm_description.urdf
+  569  sudo apt install liburdfdom-tools
+  570  check_urdf DRL_M/Fencing_arm_description/urdf/Fencing_arm_description.urdf
+  571  conda activate urdf2mjcf
+  572  python DRL_M/Assignment1/assets/urdf_to_mjcf.py DRL_M/Fencing_arm_description/urdf/Fencing_arm_description.urdf DRL_M/Assignment1/assets/tqz_meshes.xml
+  573  conda env list
+  574  conda actiavte drl-mujoco
+  575  conda activate drl-mujoco
+  576  conda env list
+  577  conda activate drl_mujoco
+  578  /home/tqz/anaconda3/envs/drl_mujoco/bin/python /home/tqz/code/DRL_M/Assignment1/envs/move.py
+  579  [200~glxinfo | grep OpenGL
+  580  glxinfo | grep OpenGL
+  581  /home/tqz/anaconda3/envs/drl_mujoco/bin/python /home/tqz/code/DRL_M/Assignment1/envs/move.py
+  582  /home/tqz/anaconda3/envs/drl_mujoco/bin/python /home/tqz/code/DRL_M/Assignment1/view-mjcf.py
+  583  conda activate drl-mjcf
+  584  python
+  585  conda env list
+  586  conda activate urdf2mjcf
+  587  pip list
+  588  python
+  589  python -m mjjoco_py.tools.urdf2mjcf DRL_M/Fencing_arm_description/urdf DRL_M/Assignment1/assets/tqz.xml
+  590  python -m mujoco_py.tools.urdf2mjcf DRL_M/Fencing_arm_description/urdf DRL_M/Assignment1/assets/tqz.xml
+  591  pip list
+  592  pip uninstall nujoco-py
+  593  pip uninstall mujoco-py
+  594  python DRL_M/Assignment1/assets/urdf_to_mjcf.py DRL_M/Fencing_arm_description/urdf/Fencing_arm_description.urdf DRL_M/Assignment1/assets/tqz.xml
+  595  . "/home/tqz/.cursor-server/bin/fe5d1728063e86edeeda5bebd2c8e14bf4d0f960/out/vs/workbench/contrib/terminal/common/scripts/shellIntegration-bash.sh"
+  596  conda env list
+  597  conda activate drl-mujoco
+  598  conda activate drl_mujoco
+  599  python /home/tqz/code/DRL_M/Assignment1/view-mjcf.py
+  600  python DRL_M/Assignment1/view-mjcf.py
+  601  conda activate urdf2mjcf
+  602  python DRL_M/Assignment1/assets/urdf_to_mjcf.py DRL_M/Fencing_arm_description2.0/urdf/Fencing_arm_description2.0.urdf DRL_M/Assignment1/assets/fencing_arm_2.xml
+  603  python DRL_M/Assignment1/view-mjcf.py
+  604  . "/home/tqz/.cursor-server/bin/fe5d1728063e86edeeda5bebd2c8e14bf4d0f960/out/vs/workbench/contrib/terminal/common/scripts/shellIntegration-bash.sh"
+  605  conda activate drl_mujoco
+  606  python /home/tqz/code/DRL_M2/Assignment1/assets/check.py
+  607  conda activate drl_mujoco
+  608  . "/home/tqz/.cursor-server/bin/fe5d1728063e86edeeda5bebd2c8e14bf4d0f960/out/vs/workbench/contrib/terminal/common/scripts/shellIntegration-bash.sh"
+  609  conda activate urdf2mjcf
+  610  python /home/tqz/code/DRL_M2/Assignment1/assets/urdf_to_mjcf.py /home/tqz/code/DRL_M2/Fencing_arm_description2.0/urdf/Fencing_arm_description2.0.urdf /home/tqz/code/DRL_M2/Assignment1/assets/fencing_arm_22.xml
+  611  python /home/tqz/code/DRL_M2/Assignment1/assets/urdf_to_mjcf.py /home/tqz/code/DRL_M2/Fencing_arm_description2.0/urdf/Fencing_arm_description2.0.urdf /home/tqz/code/DRL_M2/Assignment1/assets/fencing_arm_002.xml
+  612  ./simulate
+  613  grep mujoco
+  614  find ~ -maxdepth 3 -type d -iname "mujoco*"
+  615  python - << 'EOF'
+  616  import mujoco
+  617  print("MuJoCo Python version:", mujoco.__version__)
+  618  EOF
+  619  find ~ -maxdepth 4 -type f -name "simulate"
+  620  /home/tqz/.mujoco/mujoco210/bin/simulate 
+  621  sudo apt update
+  622  sudo apt install imwheel
+  623  nano ~/.imwheelrc
+  624  imwheel
+  625  nano ~/.imwheelrc
+  626  imwheel
+  627  killall imwheel
+  628  /home/tqz/.mujoco/mujoco210/bin/simulate 
+  629  ~/tqz/.mujoco/mujoco210/simulation
+  630  ~/tqz/.mujoco/mujoco210/bin/simulate
+  631  /home/tqz/.mujoco/mujoco210/bin/simulate 
+  632  cd ~/.mujoco/mujoco210/bin
+  633  ls -a
+  634  conda activate drl_mujoco
+  635  conda activate drl_mujoco
+  636  /home/tqz/anaconda3/envs/drl_mujoco/bin/python /home/tqz/code/DRL_M/Assignment1/view-mjcf.py
+  637  conda activate drl_mujoco
+  638  /home/tqz/anaconda3/envs/drl_mujoco/bin/python /home/tqz/code/DRL_M/Assignment1/view-mjcf.py
+  639  cd /home/tqz/code/DRL_M/Assignment1 && python scripts/test_environment.py
+  640  cd scripts/
+  641  python mujoco_viewer.py --model ../assets/fencing_arm_2.xml
+  642  pip install mujoco-viewer
+  643  pip install mujoco_viewer
+  644  cd ~/code/DRL_M2
+  645  cd /home/tqz/code/DRL_M2/Assignment1/scripts && python mujoco_viewer.py --model ../assets/fencing_arm_2.xml --demo
+  646  cd /home/tqz/code/DRL_M2/Assignment1/scripts && python simple_viewer.py --model ../assets/fencing_arm_2.xml
+  647  d /home/tqz/code/DRL_M2/Assignment1/scripts && python test_dual_fencing.py
+  648  cd /home/tqz/code/DRL_M2/Assignment1/scripts && python test_dual_fencing.py
+  649  cd /home/tqz/code/DRL_M2/Assignment1/scripts && python real_time_viewer.py --model ../assets/dual_fencing_robots.xml --mode simple
+  650  cd /home/tqz/code/DRL_M2/Assignment1/scripts && python target_visualization.py --model ../assets/dual_fencing_robots.xml --mode test
+  651  cd /home/tqz/code/DRL_M2/Assignment1/scripts && python real_time_viewer.py --model ../assets/dual_fencing_robots.xml --mode simple
+  652  cd /home/tqz/code/DRL_M2/Assignment1/scripts && python real_time_viewer.py --model ../assets/fencing_arm_22.xml --mode simple
+  653  cd /home/tqz/code/DRL_M2/Assignment1/scripts && python real_time_viewer.py --model ../assets/dual_fencing_robots.xml --mode simple
+  654  cd /home/tqz/code/DRL_M2/Assignment1/scripts && python real_time_viewer.py --model ../assets/dual_fen_tqz.xml --mode simple
+  655  cd /home/tqz/code/DRL_M2/Assignment1/scripts && python real_time_viewer.py --model ../assets/fen_tqz.xml --mode simple
+  656  cd /home/tqz/code/DRL_M2/Assignment1/scripts && python real_time_viewer.py --model ../assets/dual_fencing_robots.xml --mode simple
+  657  /home/tqz/anaconda3/envs/drl_mujoco/bin/python /home/tqz/code/DRL_M2/Assignment1/view-mjcf.py
+  658  conda activate drl_mujoco
+  659  python ~/home/tqz/code/DRL_M/Assignment1/view-mjcf.py
+  660  python DRL_M/Assignment1/view-mjcf.py
+  661  python ~/home/tqz/code/DRL_M/Assignment1/view-mjcf.py
+  662  python DRL_M/Assignment1/view-mjcf.py
+  663  . "/home/tqz/.cursor-server/bin/fe5d1728063e86edeeda5bebd2c8e14bf4d0f960/out/vs/workbench/contrib/terminal/common/scripts/shellIntegration-bash.sh"
+  664  conda activate urdf2mjcf
+  665  python DRL_M2/Assignment1/assets/urdf_to_mjcf.py DRL_M2/Fencing_arm_description2.0/urdf/Fencing_arm_description2.0.urdf DRL_M2/Assignment1/assets/original.xml
+  666  code ./Fencing_arm_description.xml 
+  667  ~/.mujoco/mujoco210/bin/simulate
+  668  ~/.mujoco/mujoco210/simulate
+  669  ~/.mujoco/mujoco210/.simulate
+  670  ~/.mujoco/mujoco210/bin/.simulate
+  671  ~/.mujoco/mujoco210/bin/simulate
+  672  . "/home/tqz/.cursor-server/bin/fe5d1728063e86edeeda5bebd2c8e14bf4d0f960/out/vs/workbench/contrib/terminal/common/scripts/shellIntegration-bash.sh"
+  673  ~/.mujoco/mujoco210/bin/simulate
+  674  tailscale
+  675  tailscale ip
+  676  . "/home/tqz/.cursor-server/bin/fe5d1728063e86edeeda5bebd2c8e14bf4d0f960/out/vs/workbench/contrib/terminal/common/scripts/shellIntegration-bash.sh"
+  677  whoami
+  678  . "/home/tqz/.cursor-server/bin/fe5d1728063e86edeeda5bebd2c8e14bf4d0f960/out/vs/workbench/contrib/terminal/common/scripts/shellIntegration-bash.sh"
+  679  . "/home/tqz/.cursor-server/bin/9d178a4a5589981b62546448bb32920a8219a5d0/out/vs/workbench/contrib/terminal/common/scripts/shellIntegration-bash.sh"
+  680  conda activate drl_mujoco
+  681  /home/tqz/anaconda3/envs/drl_mujoco/bin/python /home/tqz/code/DRL_M2/Assignment1/envs/cartpole.py
+  682  pip install "gymnasium[classic-control]
+  683  conda activate drl_mujoco
+  684  python DRL_M2/Assignment1/envs/cartpole.py
+  685  pip install "gymnasium[classic-control]"
+  686  pip install pygame
+  687  python DRL_M2/Assignment1/envs/cartpole.py
+  688  conda activate drl_mujoco
+  689  /home/tqz/anaconda3/envs/drl_mujoco/bin/python /home/tqz/code/DRL_M2/Assignment1/envs/cartpole.py
+  690  conda activate drl_mujoco
+  691  mkdir fencing_drl_project
+  692  scp -r /home/tqz/code/fencing_drl_project/mujoco_assets ~/byy
+  693  mkdir gemini_fencing
+  694  . "/home/tqz/.cursor-server/bin/fe5d1728063e86edeeda5bebd2c8e14bf4d0f960/out/vs/workbench/contrib/terminal/common/scripts/shellIntegration-bash.sh"
+  695  conda activate base
+  696  ls
+  697  pwd
+  698  mkdir byy
+  699  cd byy
+  700  conda activate drl_mujoco
+  701  /home/tqz/anaconda3/envs/drl_mujoco/bin/python /home/tqz/code/fencing_drl_project/demo_env.py
+  702  /home/tqz/anaconda3/envs/drl_mujoco/bin/python /home/tqz/code/gemini_fencing/test_env.py
+  703  conda activate drl_mujoco
+  704  python /home/tqz/code/gemini_fencing/demo_env.py --render
+  705  cd /home/tqz/code && python /home/tqz/code/gemini_fencing/demo_env.py --render
+  706  cd /home/tqz/code && python /home/tqz/code/gemini_fencing/demo_env.py --render --episode 100
+  707  cd /home/tqz/code && python /home/tqz/code/gemini_fencing/demo_env.py --render --obstacle_mode random --episode 100
+  708  /home/tqz/anaconda3/envs/drl_mujoco/bin/python /home/tqz/code/gemini_fencing/test_env.py
+  709  cd /home/tqz/code && python /home/tqz/code/gemini_fencing/demo_env.py --render --obstacle_mode random --episode 100
+  710  cd /home/tqz/code && python /home/tqz/code/gemini_fencing/demo_env.py --render --obstacle_mode reactive --episode 100
+  711  conda activate drl_mujoco
+  712  /home/tqz/anaconda3/envs/drl_mujoco/bin/python /home/tqz/byy/main.py
+  713  . "/home/tqz/.cursor-server/bin/fe5d1728063e86edeeda5bebd2c8e14bf4d0f960/out/vs/workbench/contrib/terminal/common/scripts/shellIntegration-bash.sh"
+  714  conda activate drl_mujoco
+  715  find ~/code -name "fencing_mjcf_doc.md"
+  716  # 下载适用于 Linux x64 的 VS Code CLI
+  717  curl -Lk 'https://code.visualstudio.com/sha/download?build=stable&os=cli-linux-x64' | tar -xz -C /usr/local/bin
+  718  . "/home/tqz/.cursor-server/bin/fe5d1728063e86edeeda5bebd2c8e14bf4d0f960/out/vs/workbench/contrib/terminal/common/scripts/shellIntegration-bash.sh"
+  719  scp -r /home/tqz/Desktop/NUS_STU.nmconnection  tqz@100.86.18.79 ~/Music
+  720  sudo scp -r /home/tqz/Desktop/NUS_STU.nmconnection  tqz@100.86.18.79 ~/Music
+  721  sudo cat ~/Desktop/NUS_STU.nmconnection 
+  722  . "/home/tqz/.cursor-server/bin/fe5d1728063e86edeeda5bebd2c8e14bf4d0f960/out/vs/workbench/contrib/terminal/common/scripts/shellIntegration-bash.sh"
+  723  conda activate drl_mujoco
+  724  . "/home/tqz/.cursor-server/bin/fe5d1728063e86edeeda5bebd2c8e14bf4d0f960/out/vs/workbench/contrib/terminal/common/scripts/shellIntegration-bash.sh"
+  725  conda activate drl_mujoco
+  726  /home/tqz/anaconda3/envs/drl_mujoco/bin/python /home/tqz/code/AG_fencing_2/main.py
+  727  conda activate drl_mujoco
+  728  cd /etc/NetworkManager/system-connections/
+  729  ls
+  730  cp NUS_STU.nmconnection ~/Desktop
+  731  sudo cp NUS_STU.nmconnection ~/Desktop
+  732  conda activate drl_mujoco
+  733  /home/tqz/anaconda3/envs/drl_mujoco/bin/python /home/tqz/code/AG_fencing_2/main.py
+  734  conda activate drl_mujoco
+  735  python gemini_fencing/stable_position_demo.py --method ik --duration 10000
+  736  python improved_position_control.py --method proportional --duration 1000 --kp 0.05
+  737  python /home/tqz/code/gemini_fencing/improved_position_control.py --method proportional --duration 1000 --kp 0.05
+  738  python gemini_fencing/fixed_position_control.py --method stable_reset --duration 1000
+  739  /home/tqz/anaconda3/envs/drl_mujoco/bin/python /home/tqz/code/Group4_fencing_1/main.py
+  740  python gemini_fencing/demo_env.py --render --obstacle_mode static
+  741  conda activate drl_mujoco
+  742  python gemini_fencing/demo_env.py --render --obstacle_mode static --episodes 10
+  743  python obstaclec_env_test/main.py
+  744  git clone https://github.com/SourWild/pytorch-a2c-ppo-acktr-gail.git
+  745  conda env list
+  746  conda activate drl_mujoco
+  747  /home/tqz/anaconda3/envs/drl_mujoco/bin/python /home/tqz/code/Group4_fencing_4/mainPPO.py
+  748  conda activate drl_mujoco
+  749  python Group4_fencing_4/mainPPO.py
+  750  /home/tqz/anaconda3/envs/drl_mujoco/bin/python /home/tqz/code/Group4_fencing_5/ppo_train.py
+  751  /home/tqz/anaconda3/envs/drl_mujoco/bin/python /home/tqz/code/Group4_fencing_5/NN_Learning_agent.py
+  752  pip list
+  753  python Group4_fencing_4/main.py
+  754  conda activate drl_mujoco
+  755  python Group4_fencing_5/ppo_train.py
+  756  python Group4_fencing_5_LSTM/ppo_train.py
+  757  python Group4_fencing_5_trans/ppo_train.py
+  758  conda activate drl_mujoco
+  759  python
+  760  python Group4_fencing_5.1/main.py
+  761  python Group4_fencing_5.1/main.py --model-type lstm --obstacle-mode static
+  762  python Group4_fencing_5.1/main.py --model-type transformer --obstacle-mode static
+  763  python Group4_fencing_5.1/main.py --model-type trans --obstacle-mode static
+  764  cd Group4_fencing_5.1/
+  765  git init
+  766  git commit -m "first commit with argparse"
+  767  git add .
+  768  git commit -m "first commit with argparse"
+  769  git remote add origin https://github.com/SourWild/ME5418.git
+  770  git push -u origin main
+  771  git branch
+  772  git push -u origin main
+  773  git push -u origin master
+  774  cat main.py 
+  775  python Group4_fencing_5.1/main.py --model-type trans --obstacle-mode static
+  776  cd ..
+  777  python Group4_fencing_5.1/main.py --model-type trans --obstacle-mode static
+  778  cat Group4_fencing_5.1/main.py 
+  779  python Group4_fencing_5.1/main.py --model-type trans --obstacle-mode static
+  780  python Group4_fencing_5.1/main.py --model-type lstm --obstacle-mode static
+  781  cd Group4_fencing_5.1
+  782  git add .
+  783  git commit "扩展 PPOTrainer 支持 policy/value kwargs，修复切换 LSTM/Transformer 时的参数初始化问题"
+  784  git commit -m "扩展 PPOTrainer 支持 policy/value kwargs，修复切换 LSTM/Transformer 时的参数初始化问题"
+  785  git push -u origin master
+  786  git add .
+  787  git commit -m "对NN模块添加注释"
+  788  git push -u origin master
+  789  conda activate drl_mujoco
+  790  python Group4_fencing_5.3/main.py --model-type lstm --obstacle-mode static
+  791  cd Group4_fencing_5.4
+  792  python Group4_fencing_5.4/main.py --model-type lstm --obstacle-mode static
+  793  cd ..
+  794  python Group4_fencing_5.4/main.py --model-type lstm --obstacle-mode static
+  795  cd Group4_fencing_5.4
+  796  git add .
+  797  git commit -m "添加truncated和terminated输出"
+  798  git push -u origin master
+  799  python main.py --model-type lstm --obstacle-mode static
+  800  ls
+  801  git checkout -b normalization
+  802  git add .
+  803  git commit -m "add normalization for obs and reward"
+  804  git push -u origin normalization 
+  805  python main.py --model-type lstm --obstacle-mode static
+  806  history > no_norm.txt
