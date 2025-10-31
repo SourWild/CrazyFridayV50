@@ -66,6 +66,8 @@ class PPOTrainer:
         self.logprobs_buf = np.zeros(config.rollout_steps, dtype=np.float32)
         self.running_ep_reward = 0.0
         self.completed_ep_rewards = []
+        self.running_ep_reward_separate = np.array([0, 0, 0, 0, 0, 0])
+        self.completed_ep_rewards_separate = []
         self.obs_window: Optional[Deque[np.ndarray]] = None
 
     def _init_obs_window(self, obs: np.ndarray) -> None:
@@ -73,11 +75,13 @@ class PPOTrainer:
         self.obs_window = deque([obs.copy() for _ in range(self.cfg.sequence_length)], maxlen=self.cfg.sequence_length)
 
 
-    def collect_rollout(self, start_obs: np.ndarray) -> Tuple[np.ndarray, bool]:
+    def collect_rollout(self, start_obs: np.ndarray) -> Tuple[np.ndarray, bool, bool, bool]:
         obs = start_obs.astype(np.float32)
         if self.obs_window is None:
             self._init_obs_window(obs)
         done = False
+        last_terminated = False
+        last_truncated = False
         for step in range(self.cfg.rollout_steps):
             obs_seq = np.stack(self.obs_window, axis=0)
             obs_tensor = torch.as_tensor(
@@ -90,7 +94,9 @@ class PPOTrainer:
             log_prob = float(log_prob_tensor.cpu().item())
             value = float(value_tensor.cpu().item())
 
-            next_obs, reward, terminated, truncated, _ = self.env.step(action)
+            next_obs, reward, terminated, truncated, info = self.env.step(action)
+            last_terminated = bool(terminated)
+            last_truncated = bool(truncated)
             done = terminated or truncated
 
             self.obs_buf[step] = obs_seq
@@ -100,6 +106,7 @@ class PPOTrainer:
             self.values_buf[step] = value
             self.logprobs_buf[step] = log_prob
             self.running_ep_reward += reward
+            self.running_ep_reward_separate = self.running_ep_reward_separate + info["R_separate"]
 
             next_obs = next_obs.astype(np.float32)
             self.obs_window.append(next_obs)
@@ -107,10 +114,12 @@ class PPOTrainer:
             if done:
                 self.completed_ep_rewards.append(self.running_ep_reward)
                 self.running_ep_reward = 0.0
+                self.completed_ep_rewards_separate.append(self.running_ep_reward_separate)
+                self.running_ep_reward_separate = np.array([0, 0, 0, 0, 0, 0])
                 obs, _ = self.env.reset()
                 obs = obs.astype(np.float32)
                 self._init_obs_window(obs)
-        return obs, done
+        return obs, done, last_terminated, last_truncated
 
     def compute_gae(self, next_value: np.ndarray, last_done: bool) -> Tuple[np.ndarray, np.ndarray]:
         advantages = np.zeros_like(self.rewards_buf)
@@ -180,7 +189,7 @@ class PPOTrainer:
         total_updates = math.ceil(self.cfg.total_timesteps / self.cfg.rollout_steps)
         for update in range(1, total_updates + 1):
             start_time = time.time()
-            obs, last_done = self.collect_rollout(obs)
+            obs, last_done, last_terminated, last_truncated = self.collect_rollout(obs)
             with torch.no_grad():
                 if last_done:
                     next_value = 0.0
@@ -197,12 +206,34 @@ class PPOTrainer:
             avg_reward = (
                 np.mean(self.completed_ep_rewards[-10:]) if self.completed_ep_rewards else 0.0
             )
+            
+            arr = np.array(self.completed_ep_rewards_separate, dtype=np.float32)
+            if arr.size > 0:
+                avg_reward_separate = np.mean(arr[-10:], axis=0)
+            else:
+                avg_reward_separate = np.zeros(6, dtype=np.float32)
+            
+            
             print(
+                f"——————————————————————————————————————————————————————————\n"
                 f"Update {update}/{total_updates} | "
                 f"Steps {update * self.cfg.rollout_steps} | "
                 f"AvgReward {avg_reward:.2f} | "
-                f"Time {elapsed:.2f}s"
+                f"Time {elapsed:.2f}s | "
+                f"Terminated {last_terminated} | "
+                f"Truncated {last_truncated}"
             )
+            print(
+                f"AvgReward-R_dist: {avg_reward_separate[0]:.2f}\n"
+                f"AvgReward-R_success: {avg_reward_separate[1]:.2f}\n"
+                f"AvgReward-R_failure: {avg_reward_separate[2]:.2f}\n"
+                f"AvgReward-R_collision: {avg_reward_separate[3]:.2f}\n"
+                f"AvgReward-R_action: {avg_reward_separate[4]:.2f}\n"
+                f"AvgReward-R_step: {avg_reward_separate[5]:.2f}\n"
+            )   
+            
+            
+            
         self.env.close()
 
 
