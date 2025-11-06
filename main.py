@@ -35,6 +35,21 @@ def parse_args() -> argparse.Namespace:
         type=int,
         help="Override random seed used for training (default: 42).",
     )
+    parser.add_argument(
+        "--checkpoint-interval",
+        type=int,
+        help="Save checkpoints every N PPO updates (default: config setting).",
+    )
+    parser.add_argument(
+        "--checkpoint-root",
+        type=str,
+        help="Root directory to store checkpoints (default: checkpoints).",
+    )
+    parser.add_argument(
+        "--resume-checkpoint",
+        type=str,
+        help="Path to a checkpoint file to resume training from.",
+    )
     return parser.parse_args()
 
 
@@ -54,6 +69,10 @@ def main() -> None:
         config.total_timesteps = args.total_timesteps
     if args.seed is not None:
         config.seed = args.seed
+    if args.checkpoint_interval is not None:
+        config.checkpoint_interval = max(1, args.checkpoint_interval)
+    if args.checkpoint_root is not None:
+        config.checkpoint_root = args.checkpoint_root
 
     if model_id == "lstm":
         policy_kwargs = {"lstm_hidden_size": config.lstm_hidden_size}
@@ -85,6 +104,8 @@ def main() -> None:
         policy_kwargs=policy_kwargs,
         value_kwargs=value_kwargs,
     )
+    if args.resume_checkpoint:
+        trainer.load_checkpoint(args.resume_checkpoint)
     trainer.train()
 
 if __name__ == "__main__":

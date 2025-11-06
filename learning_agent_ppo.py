@@ -1,13 +1,17 @@
 import math
+import os
 import time
-from dataclasses import dataclass
+from dataclasses import dataclass, asdict
 from collections import deque
 from typing import Any, Deque, Dict, Optional, Tuple
 
+import mujoco
 import numpy as np
 import torch
 import torch.nn as nn
 import torch.optim as optim
+
+from obstacle_env import ObstacleEnv
 
 
 class RunningMeanStd:
@@ -48,7 +52,6 @@ class RunningMeanStd:
 
 @dataclass
 class PPOConfig:
-    # total_timesteps: int = 600_000
     iterations: int = 500
     rollout_steps: int = 2048
     minibatch_size: int = 256
@@ -68,6 +71,9 @@ class PPOConfig:
     transformer_num_layers: int = 2
     transformer_dropout: float = 0.1
     seed: int = 42
+    checkpoint_interval: int = 10
+    checkpoint_root: str = "checkpoints"
+
 
 class PPOTrainer:
     def __init__(
@@ -109,13 +115,23 @@ class PPOTrainer:
         self.running_ep_reward = 0.0
         self.completed_ep_rewards = []
         self.running_ep_reward_separate = np.array([0, 0, 0, 0, 0, 0])
-        self.completed_ep_rewards_separate = []   
+        self.completed_ep_rewards_separate = []
         self.completed_success = []
         self.completed_failure = []
         self.ep_num = 0
-        
-        
+
         self.obs_window: Optional[Deque[np.ndarray]] = None
+        self.last_obs: Optional[np.ndarray] = None
+        self.last_done: bool = False
+        self.checkpoint_interval = max(0, config.checkpoint_interval)
+        self.checkpoint_root = os.path.abspath(config.checkpoint_root)
+        os.makedirs(self.checkpoint_root, exist_ok=True)
+        self.run_timestamp = time.strftime("%Y%m%d-%H%M%S")
+        self.checkpoint_dir = os.path.join(self.checkpoint_root, self.run_timestamp)
+        os.makedirs(self.checkpoint_dir, exist_ok=True)
+        self.last_checkpoint_path: Optional[str] = None
+        self.start_update_idx: int = 0
+        self.has_loaded_checkpoint: bool = False
 
     def _init_obs_window(self, norm_obs: np.ndarray) -> None:
         norm_obs = norm_obs.astype(np.float32)
@@ -135,6 +151,250 @@ class PPOTrainer:
             return reward
         return reward / scale
 
+    def _get_rms_state(self, rms: RunningMeanStd) -> Dict[str, Any]:
+        return {
+            "mean": rms.mean.copy(),
+            "var": rms.var.copy(),
+            "count": rms.count,
+        }
+
+    def _get_rng_state(self) -> Dict[str, Any]:
+        rng_state: Dict[str, Any] = {
+            "torch": torch.get_rng_state(),
+            "numpy": np.random.get_state(),
+        }
+        if torch.cuda.is_available():
+            rng_state["cuda"] = torch.cuda.get_rng_state_all()
+        env_rng = getattr(self.env, "np_random", None)
+        if env_rng is not None:
+            if hasattr(env_rng, "bit_generator"):
+                rng_state["env"] = env_rng.bit_generator.state
+            elif hasattr(env_rng, "get_state"):
+                rng_state["env"] = env_rng.get_state()
+        return rng_state
+
+    def _get_env_state(self) -> Dict[str, Any]:
+        state: Dict[str, Any] = {}
+        data = getattr(self.env, "data", None)
+        if data is not None:
+            for attr in ("qpos", "qvel", "ctrl"):
+                if hasattr(data, attr):
+                    try:
+                        state[attr] = np.array(getattr(data, attr)).copy()
+                    except Exception:
+                        pass
+            if hasattr(data, "time"):
+                state["time"] = float(data.time)
+        state["episode_step"] = getattr(self.env, "episode_step", None)
+        state["max_episode_steps"] = getattr(self.env, "max_episode_steps", None)
+        state["obstacle_mode"] = getattr(self.env, "obstacle_mode", None)
+        return state
+
+    def _apply_env_state(self, env_state: Optional[Dict[str, Any]]) -> None:
+        if not env_state:
+            return
+        data = getattr(self.env, "data", None)
+        if data is None:
+            return
+        for attr in ("qpos", "qvel", "ctrl"):
+            if attr in env_state and hasattr(data, attr):
+                try:
+                    np.copyto(getattr(data, attr), np.array(env_state[attr], dtype=np.float64))
+                except Exception:
+                    pass
+        if "time" in env_state:
+            data.time = float(env_state["time"])
+        if "episode_step" in env_state and hasattr(self.env, "episode_step"):
+            try:
+                self.env.episode_step = int(env_state["episode_step"])
+            except Exception:
+                pass
+        if "max_episode_steps" in env_state and hasattr(self.env, "max_episode_steps"):
+            try:
+                self.env.max_episode_steps = int(env_state["max_episode_steps"])
+            except Exception:
+                pass
+        if "obstacle_mode" in env_state and env_state["obstacle_mode"] is not None:
+            try:
+                self.env.obstacle_mode = env_state["obstacle_mode"]
+            except Exception:
+                pass
+        try:
+            mujoco.mj_forward(self.env.model, data)
+        except Exception:
+            pass
+
+    def save_checkpoint(self, update_idx: int, total_timesteps: int) -> str:
+        if self.obs_window is not None:
+            obs_window = [np.array(item).copy() for item in self.obs_window]
+        else:
+            obs_window = None
+
+        checkpoint: Dict[str, Any] = {
+            "update_idx": update_idx,
+            "total_timesteps": total_timesteps,
+            "config": asdict(self.cfg),
+            "run_timestamp": self.run_timestamp,
+            "policy_state": self.policy.state_dict(),
+            "value_state": self.value.state_dict(),
+            "policy_optimizer_state": self.policy_optim.state_dict(),
+            "value_optimizer_state": self.value_optim.state_dict(),
+            "obs_rms": self._get_rms_state(self.obs_rms),
+            "reward_rms": self._get_rms_state(self.reward_rms),
+            "running_ep_reward": self.running_ep_reward,
+            "running_ep_reward_separate": self.running_ep_reward_separate.copy(),
+            "completed_ep_rewards": list(self.completed_ep_rewards),
+            "completed_ep_rewards_separate": [
+                np.array(arr).copy() for arr in self.completed_ep_rewards_separate
+            ],
+            "completed_success": list(self.completed_success),
+            "completed_failure": list(self.completed_failure),
+            "ep_num": self.ep_num,
+            "obs_window": obs_window,
+            "last_obs": None if self.last_obs is None else np.array(self.last_obs).copy(),
+            "last_done": self.last_done,
+            "rng_state": self._get_rng_state(),
+            "env_state": self._get_env_state(),
+        }
+
+        filename = f"update_{update_idx:05d}.pt"
+        path = os.path.join(self.checkpoint_dir, filename)
+        tmp_path = path + ".tmp"
+
+        try:
+            torch.save(checkpoint, tmp_path)
+        except RuntimeError as exc:
+            if "PytorchStreamWriter" in str(exc):
+                torch.save(checkpoint, tmp_path, _use_new_zipfile_serialization=False)
+            else:
+                if os.path.exists(tmp_path):
+                    try:
+                        os.remove(tmp_path)
+                    except OSError:
+                        pass
+                raise
+
+        os.replace(tmp_path, path)
+        self.last_checkpoint_path = path
+        print(f"[checkpoint] Saved update {update_idx} to {path}")
+        return path
+
+    def load_checkpoint(self, path: str) -> None:
+        checkpoint_path = os.path.abspath(path)
+        if not os.path.isfile(checkpoint_path):
+            raise FileNotFoundError(f"Checkpoint not found: {checkpoint_path}")
+
+        try:
+            checkpoint = torch.load(checkpoint_path, map_location="cpu", weights_only=False)
+        except TypeError:
+            checkpoint = torch.load(checkpoint_path, map_location="cpu")
+
+        saved_cfg = checkpoint.get("config")
+        if isinstance(saved_cfg, dict):
+            for key, value in saved_cfg.items():
+                if not hasattr(self.cfg, key):
+                    continue
+                if key == "iterations":
+                    try:
+                        self.cfg.iterations = max(int(value), int(self.cfg.iterations))
+                    except Exception:
+                        self.cfg.iterations = int(self.cfg.iterations)
+                    continue
+                setattr(self.cfg, key, value)
+
+        self.policy.load_state_dict(checkpoint["policy_state"])
+        self.value.load_state_dict(checkpoint["value_state"])
+        self.policy_optim.load_state_dict(checkpoint["policy_optimizer_state"])
+        self.value_optim.load_state_dict(checkpoint["value_optimizer_state"])
+
+        obs_rms_state = checkpoint.get("obs_rms")
+        if obs_rms_state:
+            np.copyto(self.obs_rms.mean, np.array(obs_rms_state.get("mean"), dtype=np.float64))
+            np.copyto(self.obs_rms.var, np.array(obs_rms_state.get("var"), dtype=np.float64))
+            self.obs_rms.count = float(obs_rms_state.get("count", self.obs_rms.count))
+
+        reward_rms_state = checkpoint.get("reward_rms")
+        if reward_rms_state:
+            np.copyto(self.reward_rms.mean, np.array(reward_rms_state.get("mean"), dtype=np.float64))
+            np.copyto(self.reward_rms.var, np.array(reward_rms_state.get("var"), dtype=np.float64))
+            self.reward_rms.count = float(reward_rms_state.get("count", self.reward_rms.count))
+
+        self.running_ep_reward = float(checkpoint.get("running_ep_reward", 0.0))
+        self.running_ep_reward_separate = np.array(
+            checkpoint.get("running_ep_reward_separate", np.zeros(6, dtype=np.float32)),
+            dtype=np.float32,
+        )
+        self.completed_ep_rewards = list(checkpoint.get("completed_ep_rewards", []))
+        self.completed_ep_rewards_separate = [
+            np.array(arr, dtype=np.float32)
+            for arr in checkpoint.get("completed_ep_rewards_separate", [])
+        ]
+        self.completed_success = list(checkpoint.get("completed_success", []))
+        self.completed_failure = list(checkpoint.get("completed_failure", []))
+        self.ep_num = int(checkpoint.get("ep_num", 0))
+
+        obs_window_state = checkpoint.get("obs_window")
+        if obs_window_state is not None:
+            self.obs_window = deque(
+                [np.array(item, dtype=np.float32) for item in obs_window_state],
+                maxlen=self.cfg.sequence_length,
+            )
+        else:
+            self.obs_window = None
+
+        last_obs_state = checkpoint.get("last_obs")
+        self.last_obs = None if last_obs_state is None else np.array(last_obs_state, dtype=np.float32)
+        self.last_done = bool(checkpoint.get("last_done", False))
+        if self.obs_window is None and self.last_obs is not None:
+            self._init_obs_window(self.last_obs.astype(np.float32))
+
+        rng_state = checkpoint.get("rng_state", {})
+        torch_state = rng_state.get("torch")
+        if torch_state is not None:
+            if not isinstance(torch_state, torch.ByteTensor):
+                torch_state = torch.tensor(torch_state, dtype=torch.uint8)
+            torch.set_rng_state(torch_state)
+        numpy_state = rng_state.get("numpy")
+        if numpy_state is not None:
+            np.random.set_state(numpy_state)
+        cuda_state = rng_state.get("cuda")
+        if cuda_state is not None and torch.cuda.is_available():
+            if isinstance(cuda_state, (list, tuple)):
+                cuda_state = [
+                    cs if isinstance(cs, torch.ByteTensor) else torch.tensor(cs, dtype=torch.uint8)
+                    for cs in cuda_state
+                ]
+            elif not isinstance(cuda_state, torch.ByteTensor):
+                cuda_state = torch.tensor(cuda_state, dtype=torch.uint8)
+            torch.cuda.set_rng_state_all(cuda_state)
+        env_state_rng = rng_state.get("env")
+        env_rng = getattr(self.env, "np_random", None)
+        if env_rng is not None and env_state_rng is not None:
+            if hasattr(env_rng, "bit_generator"):
+                env_rng.bit_generator.state = env_state_rng
+            elif hasattr(env_rng, "set_state"):
+                env_rng.set_state(env_state_rng)
+
+        env_state = checkpoint.get("env_state")
+        self._apply_env_state(env_state)
+
+        self.start_update_idx = int(checkpoint.get("update_idx", 0))
+        total_timesteps = checkpoint.get("total_timesteps")
+        if total_timesteps is not None:
+            try:
+                self.start_update_idx = max(self.start_update_idx, int(total_timesteps // self.cfg.rollout_steps))
+            except Exception:
+                pass
+
+        checkpoint_dir = os.path.dirname(checkpoint_path)
+        parent_dir = os.path.dirname(checkpoint_dir)
+        self.checkpoint_dir = checkpoint_dir
+        self.checkpoint_root = parent_dir if parent_dir else self.checkpoint_root
+        os.makedirs(self.checkpoint_dir, exist_ok=True)
+        self.run_timestamp = checkpoint.get("run_timestamp", os.path.basename(self.checkpoint_dir))
+        self.last_checkpoint_path = checkpoint_path
+        self.has_loaded_checkpoint = True
+        print(f"[checkpoint] Loaded state from {checkpoint_path}; resuming at update {self.start_update_idx}.")
 
     def collect_rollout(self, start_obs: np.ndarray) -> Tuple[np.ndarray, bool, bool, bool]:
         # Core sampling loop: build sequence, act, and push transitions / 采样主循环：构造序列、执行动作并存储转移
@@ -187,14 +447,14 @@ class PPOTrainer:
                 self.completed_ep_rewards_separate.append(self.running_ep_reward_separate)
                 self.running_ep_reward_separate = np.array([0, 0, 0, 0, 0, 0])
                 self.ep_num += 1
-                
-            if last_done:   
+
+            if last_done:
                 obs, _ = self.env.reset()
                 obs = obs.astype(np.float32)
                 norm_reset_obs = self._normalize_obs(obs)
                 self._init_obs_window(norm_reset_obs)
                 obs = norm_reset_obs
-                                      
+
         return obs, last_done
 
     def compute_gae(self, next_value: np.ndarray, last_done: bool) -> Tuple[np.ndarray, np.ndarray]:
@@ -261,19 +521,33 @@ class PPOTrainer:
 
     def train(self) -> None:
         # Training loop: rollout → advantage/return → PPO update / 训练循环：采样 → 计算优势回报 → 执行 PPO 更新
-        obs, _ = self.env.reset(seed=self.cfg.seed)
-        obs = obs.astype(np.float32)
-        norm_obs = self._normalize_obs(obs)
-        self._init_obs_window(norm_obs)
-        obs = norm_obs
-        # total_updates = math.ceil(self.cfg.total_timesteps / self.cfg.rollout_steps)
+        if self.has_loaded_checkpoint and self.last_obs is not None and self.obs_window is not None:
+            obs = self.last_obs.astype(np.float32)
+            if len(self.obs_window) != self.cfg.sequence_length:
+                self._init_obs_window(obs)
+        else:
+            raw_obs, _ = self.env.reset(seed=self.cfg.seed)
+            raw_obs = raw_obs.astype(np.float32)
+            norm_obs = self._normalize_obs(raw_obs)
+            self._init_obs_window(norm_obs)
+            obs = norm_obs
+            self.last_obs = obs.copy()
+            self.last_done = False
+
         total_updates = self.cfg.iterations
         start_time = time.time()
-        
-        for update in range(1, total_updates + 1):
+
+        start_update = self.start_update_idx
+        if start_update >= total_updates:
+            print(f"[checkpoint] Requested iterations ({total_updates}) already completed; nothing to train.")
+            return
+
+        for update in range(start_update + 1, total_updates + 1):
             iteration_start_time = time.time()
-            obs, last_done = self.collect_rollout(obs)                       
-            
+            obs, last_done = self.collect_rollout(obs)
+            self.last_obs = obs.copy()
+            self.last_done = last_done
+
             with torch.no_grad():
                 if last_done:
                     next_value = 0.0
@@ -289,8 +563,8 @@ class PPOTrainer:
             time_elapsed = time.time() - start_time
             iteration_elapsed = time.time() - iteration_start_time
             fps = self.cfg.rollout_steps / iteration_elapsed
-                     
-            
+            total_timesteps = update * self.cfg.rollout_steps
+
             ep_rew_mean = (
                 np.mean(self.completed_ep_rewards[-10:]) if self.completed_ep_rewards else 0.0
             )
@@ -300,18 +574,18 @@ class PPOTrainer:
             failuer_rate = (
                 np.mean(self.completed_failure[-10:]) if self.completed_failure else 0.0
             )
-            
+
             arr = np.array(self.completed_ep_rewards_separate, dtype=np.float32)
             if arr.size > 0:
                 ep_rew_mean_separate = np.mean(arr[-10:], axis=0)
             else:
-                ep_rew_mean_separate = np.zeros(6, dtype=np.float32)                
-            
+                ep_rew_mean_separate = np.zeros(6, dtype=np.float32)
+
             if self.ep_num == 0:
                 ep_len_mean = 0
-            else: 
+            else:
                 ep_len_mean = update * self.cfg.rollout_steps / self.ep_num
-            
+
             print(
                 f"----------------------------------------\n"
                 f"rollout：\n"
@@ -326,21 +600,19 @@ class PPOTrainer:
                 f"ep_rew_mean_collision: {ep_rew_mean_separate[3]:.2f} |\n"
                 f"ep_rew_mean_action: {ep_rew_mean_separate[4]:.2f} |\n"
                 f"ep_rew_mean_step: {ep_rew_mean_separate[5]:.2f} |\n"
-                
-                
                 f"----------------------------------------\n"
                 f"time：\n"
                 f"fps {fps:.2f} | \n"
                 f"iterations {update}/{total_updates} | \n"
                 f"time_elapsed {time_elapsed:.2f}s | \n"
-                f"total_timesteps {update * self.cfg.rollout_steps} | \n"
-                
-                
+                f"total_timesteps {total_timesteps} | \n"
                 f"----------------------------------------\n"
                 f"train：\n"
             )
-            
-            
+
+            if self.checkpoint_interval > 0 and update % self.checkpoint_interval == 0:
+                self.save_checkpoint(update, total_timesteps)
+
         self.env.close()
 
 
