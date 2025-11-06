@@ -4,19 +4,27 @@ import torch
 import torch.nn as nn
 
 
-def mlp(input_dim: int, hidden_dims: Tuple[int, ...], output_dim: int) -> nn.Sequential:
-    # Feedforward stack / 前馈层堆叠
+def build_feature_mlp(
+    input_dim: int,
+    hidden_dims: Tuple[int, ...],
+    activation: nn.Module = nn.SiLU,
+    dropout_p: float = 0.0,
+) -> Tuple[nn.Sequential, int]:
+    # Feedforward refinement after attention / 注意力后的前馈细化层
     layers = []
     last_dim = input_dim
     for hidden_dim in hidden_dims:
         layers.append(nn.Linear(last_dim, hidden_dim))
-        layers.append(nn.ReLU())
+        layers.append(nn.LayerNorm(hidden_dim))
+        layers.append(activation())
+        if dropout_p > 0.0:
+            layers.append(nn.Dropout(dropout_p))
         last_dim = hidden_dim
-    layers.append(nn.Linear(last_dim, output_dim))
-    return nn.Sequential(*layers)
+    return nn.Sequential(*layers), last_dim
 
 
 class PolicyNetwork(nn.Module):
+    # Transformer-based policy head / 基于 Transformer 的策略头
     def __init__(
         self,
         obs_dim: int,
@@ -43,10 +51,14 @@ class PolicyNetwork(nn.Module):
             activation="gelu",
         )
         self.encoder = nn.TransformerEncoder(encoder_layer, num_layers=num_layers)
-        # Policy head / 策略输出头
-        self.net = mlp(embed_dim, hidden_dims, act_dim)
-        # Log-std parameter / 对数标准差
-        self.log_std = nn.Parameter(torch.zeros(act_dim))
+        self.output_norm = nn.LayerNorm(embed_dim)
+        self.feature_net, feature_dim = build_feature_mlp(embed_dim, hidden_dims)
+        head_input_dim = feature_dim
+        # Policy heads / 策略输出头
+        self.mean_head = nn.Linear(head_input_dim, act_dim)
+        self.log_std_head = nn.Linear(head_input_dim, act_dim)
+        self.log_std_min = -5.0
+        self.log_std_max = 2.0
 
     def forward(self, obs_seq: torch.Tensor) -> Tuple[torch.Tensor, torch.Tensor]:
         # Sequence check / 检查输入维度
@@ -59,12 +71,15 @@ class PolicyNetwork(nn.Module):
         features = self.encoder(x)
         pooled = features[:, -1, :]
         # Head / 输出均值
-        mean = self.net(pooled)
-        log_std = self.log_std.expand_as(mean)
+        pooled = self.output_norm(pooled)
+        projected = self.feature_net(pooled)
+        mean = self.mean_head(projected)
+        # Clamp log-variance to keep exploration bounded / 裁剪对数方差以限定探索边界
+        log_std = torch.clamp(self.log_std_head(projected), self.log_std_min, self.log_std_max)
         return mean, log_std
 
     def sample(self, obs_seq: torch.Tensor):
-        # Sample with Tanh / 采样动作并压缩
+        # Sample with Tanh to stay within joint limits / 使用 Tanh 保持在关节限制内
         mean, log_std = self.forward(obs_seq)
         std = torch.exp(log_std)
         normal = torch.distributions.Normal(mean, std)
@@ -77,7 +92,7 @@ class PolicyNetwork(nn.Module):
         return action, log_prob, entropy
 
     def evaluate(self, obs_seq: torch.Tensor, actions: torch.Tensor):
-        # Evaluate for PPO / 评估 PPO 对数概率
+        # Evaluate tanh-squashed Gaussian log-prob / 评估 Tanh 压缩高斯的对数概率
         mean, log_std = self.forward(obs_seq)
         std = torch.exp(log_std)
         normal = torch.distributions.Normal(mean, std)
@@ -90,6 +105,7 @@ class PolicyNetwork(nn.Module):
 
 
 class ValueNetwork(nn.Module):
+    # Transformer-based value head / 基于 Transformer 的价值头
     def __init__(
         self,
         obs_dim: int,
@@ -113,8 +129,11 @@ class ValueNetwork(nn.Module):
             activation="gelu",
         )
         self.encoder = nn.TransformerEncoder(encoder_layer, num_layers=num_layers)
+        self.output_norm = nn.LayerNorm(embed_dim)
+        self.feature_net, feature_dim = build_feature_mlp(embed_dim, hidden_dims)
+        head_input_dim = feature_dim
         # Value head / 价值头
-        self.net = mlp(embed_dim, hidden_dims, 1)
+        self.value_head = nn.Linear(head_input_dim, 1)
 
     def forward(self, obs_seq: torch.Tensor) -> torch.Tensor:
         # Encode then regress value / 编码后回归价值
@@ -125,4 +144,6 @@ class ValueNetwork(nn.Module):
         x = x + pos
         features = self.encoder(x)
         pooled = features[:, -1, :]
-        return self.net(pooled)
+        pooled = self.output_norm(pooled)
+        projected = self.feature_net(pooled)
+        return self.value_head(projected)

@@ -23,6 +23,8 @@ class ObstacleEnv(gym.Env):
         self.render_mode = render_mode
         self.viewer = None  # passive viewer (GUI)
         self.cam = None     # for rgb_array mode
+        self.max_episode_steps =100_000  # enforce 10k-step horizon
+        self.episode_step = 0
        
         # =======================
         # Action space (8dim): 
@@ -286,6 +288,7 @@ class ObstacleEnv(gym.Env):
         # ======================= 
         mujoco.mj_step(self.model, self.data)
         self.time += self.dt
+        self.episode_step += 1
 
         # =======================
         # Render mode switching
@@ -321,16 +324,16 @@ class ObstacleEnv(gym.Env):
         obstacle_base_body_id = self.model.body("base_link_obstacle").id
         target_pos =  self.data.xpos[obstacle_base_body_id]
         dist_to_target = np.linalg.norm(agent_ee_pos - target_pos)
-        R_dist = dist_to_target
+        R_dist = dist_to_target**2
         w_dist = -1.0
         
         # 2、Reward for Success and Punishment for Failure
         # 2、成功奖励与失败惩罚
         ccp = self._check_collision_point ()
         R_success =  1.0 if ccp == 2 or ccp == 3 else 0.0
-        w_success = 1000.0
+        w_success = 10000.0
         R_failure =  1.0 if ccp == 1 or ccp == 3 else 0.0
-        w_failure = -1000.0       
+        w_failure = -10000.0       
         
         # 3. Collision rewards or punishments
         # (It is currently unclear whether collisions should be punished or rewarded, so w_collision is set to 0.0)
@@ -340,19 +343,19 @@ class ObstacleEnv(gym.Env):
         R_collision = 1.0 if ccnp else 0.0
         w_collision = 0.0
         
-        # 4、动作平滑度惩罚
+        # 4、动作平滑度惩罚 或 控制开销惩罚
         #（鼓励更平滑的路径）
         # 4.Punishment for smoothness of actions
         # (Encourage smoother paths)
-        R_action = 0
-        w_action = 0
+        R_action = np.sum(np.square(action))
+        w_action = -0.001
         
         # 5. Time step punishment 
         # (encouraging efficiency, exponential growth to avoid small rewards drowning out the final reward)
         # 5、时间步惩罚
         # （鼓励效率，指数增长避免小奖励淹没最终奖励）
-        R_step = self.time**1.5
-        w_step = -1.0
+        R_step = 1
+        w_step = -0.001
         
         R_separate = np.array([
             w_dist * R_dist,
@@ -371,12 +374,8 @@ class ObstacleEnv(gym.Env):
         # End flag / 结束标志
         # ======================= 
         
-        if self._check_collision_point () == 0 :
-            terminated = False
-        else :
-            terminated = True
-        
-        truncated = False
+        terminated = self._check_collision_point() != 0
+        truncated = self.episode_step >= self.max_episode_steps
         info = {
             "R_separate": R_separate
             }
@@ -407,6 +406,7 @@ class ObstacleEnv(gym.Env):
         # Reset simulation / 重置模拟状态
         mujoco.mj_resetData(self.model, self.data) 
         self.time = 0.0
+        self.episode_step = 0
         # Constructing observation space / 构造观测空间
         obs = np.concatenate([self.data.qpos[:8], self.data.qvel[:8], self.data.qpos[12:20]]) 
         info = {} 

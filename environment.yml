@@ -83,3 +83,4 @@ dependencies:
       - typing-extensions==4.15.0
       - tzdata==2025.2
       - zipp==3.23.0
+prefix: /home/tqz/anaconda3/envs/drl_mujoco

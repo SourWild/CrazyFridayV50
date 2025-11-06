@@ -40,7 +40,7 @@
     
     <body name="base_link_agent" pos="2 0 0.1">
     <!-- slide改为x轴，limited range -5 5是相对于其初始pos的，需调整 -->
-      <joint name="slide_x_agent" type="slide" axis="1 0 0" range="-5 5" limited="true" damping="500"/> 
+      <joint name="slide_x_agent" type="slide" axis="1 0 0" range="-3 3" limited="true" damping="500"/> 
       <inertial mass="477.18" pos="0 0 0.69005" diaginertia="50.0 50.0 30.0"/>
       <geom type="mesh" contype="17" conaffinity="24" group="1" density="0" rgba="0.8 0.2 0.2 1" mesh="base_link"/>
       <geom type="mesh" rgba="0.8 0.2 0.2 1" mesh="base_link"/>
@@ -124,7 +124,7 @@
 
     <body name="base_link_obstacle" pos="-2 0 0.1" quat="0 0 0 1">
     <!-- slide改为x轴 -->
-      <joint name="slide_x_obstacle" type="slide" axis="1 0 0" range="-5 5" limited="true" damping="500"/> 
+      <joint name="slide_x_obstacle" type="slide" axis="1 0 0" range="-0.2 0.2" limited="true" damping="500"/> 
       <inertial mass="477.18" pos="0 0 0.69005" diaginertia="50.0 50.0 30.0"/>
       <geom type="mesh" contype="17" conaffinity="20" group="1" density="0" rgba="0.2 0.2 0.8 1" mesh="base_link"/>
       <geom type="mesh" rgba="0.2 0.2 0.8 1" mesh="base_link"/>
