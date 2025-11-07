@@ -3,7 +3,7 @@ import os
 import time
 from dataclasses import dataclass, asdict
 from collections import deque
-from typing import Any, Deque, Dict, Optional, Tuple
+from typing import Any, Deque, Dict, List, Optional, Tuple
 
 import mujoco
 import numpy as np
@@ -12,6 +12,7 @@ import torch.nn as nn
 import torch.optim as optim
 
 from obstacle_env import ObstacleEnv
+from gail_module import GAILModule
 
 
 class RunningMeanStd:
@@ -73,6 +74,16 @@ class PPOConfig:
     seed: int = 42
     checkpoint_interval: int = 10
     checkpoint_root: str = "checkpoints"
+    # GAIL-specific settings /GAIL
+    use_gail: bool = False
+    expert_data_path: Optional[str] = None
+    gail_batch_size: int = 256
+    gail_update_iters: int = 5
+    gail_hidden_dims: Tuple[int, ...] = (256, 256)
+    gail_learning_rate: float = 3e-4
+    gail_reward_scale: float = 1.0
+    gail_mix_ratio: float = 1.0
+    gail_grad_penalty: float = 0.0
 
 
 class PPOTrainer:
@@ -109,6 +120,8 @@ class PPOTrainer:
         self.obs_buf = np.zeros((config.rollout_steps, config.sequence_length, obs_dim), dtype=np.float32)
         self.actions_buf = np.zeros((config.rollout_steps, act_dim), dtype=np.float32)
         self.rewards_buf = np.zeros(config.rollout_steps, dtype=np.float32)
+        # 原始奖励缓冲
+        self.raw_rewards_buf = np.zeros(config.rollout_steps, dtype=np.float32)
         self.dones_buf = np.zeros(config.rollout_steps, dtype=np.float32)
         self.values_buf = np.zeros(config.rollout_steps, dtype=np.float32)
         self.logprobs_buf = np.zeros(config.rollout_steps, dtype=np.float32)
@@ -122,6 +135,8 @@ class PPOTrainer:
 
         self.obs_window: Optional[Deque[np.ndarray]] = None
         self.last_obs: Optional[np.ndarray] = None
+        # 原始观测缓存
+        self.last_raw_obs: Optional[np.ndarray] = None
         self.last_done: bool = False
         self.checkpoint_interval = max(0, config.checkpoint_interval)
         self.checkpoint_root = os.path.abspath(config.checkpoint_root)
@@ -132,6 +147,60 @@ class PPOTrainer:
         self.last_checkpoint_path: Optional[str] = None
         self.start_update_idx: int = 0
         self.has_loaded_checkpoint: bool = False
+        # GAIL模块实例
+        self.gail_module: Optional[GAILModule] = None
+        self.gail_policy_obs: List[np.ndarray] = []
+        self.gail_policy_actions: List[np.ndarray] = []
+        self.last_gail_metrics: Dict[str, float] = {}
+        if self.cfg.use_gail:
+            self._init_gail_module(obs_dim, act_dim)
+
+    def _init_gail_module(self, obs_dim: int, act_dim: int) -> None:
+        if not self.cfg.expert_data_path:
+            raise ValueError("GAIL is enabled but expert_data_path is empty.")
+        self.gail_module = GAILModule(
+            obs_dim=obs_dim,
+            act_dim=act_dim,
+            device=self.device,
+            dataset_path=self.cfg.expert_data_path,
+            hidden_dims=self.cfg.gail_hidden_dims,
+            batch_size=self.cfg.gail_batch_size,
+            iters_per_update=self.cfg.gail_update_iters,
+            learning_rate=self.cfg.gail_learning_rate,
+            reward_scale=self.cfg.gail_reward_scale,
+            grad_penalty_coef=self.cfg.gail_grad_penalty,
+        )
+
+    def _apply_gail_rewards(self) -> None:
+        if not self.cfg.use_gail or self.gail_module is None:
+            return
+        if not self.gail_policy_obs:
+            return
+
+        policy_obs = np.asarray(self.gail_policy_obs, dtype=np.float32)
+        policy_actions = np.asarray(self.gail_policy_actions, dtype=np.float32)
+        gail_rewards, metrics = self.gail_module.update_and_reward(policy_obs, policy_actions)
+        if gail_rewards.shape[0] != self.cfg.rollout_steps:
+            raise ValueError(
+                f"GAIL reward length {gail_rewards.shape[0]} does not match rollout steps {self.cfg.rollout_steps}."
+            )
+
+        mix = float(np.clip(self.cfg.gail_mix_ratio, 0.0, 1.0))
+        mixed_rewards = mix * gail_rewards + (1.0 - mix) * self.raw_rewards_buf
+        for idx, reward in enumerate(mixed_rewards):
+            self.rewards_buf[idx] = self._normalize_reward(float(reward))
+
+        reward_mean = float(np.mean(gail_rewards)) if gail_rewards.size > 0 else 0.0
+        self.last_gail_metrics = {
+            "expert_loss": metrics.get("expert_loss", 0.0),
+            "policy_loss": metrics.get("policy_loss", 0.0),
+            "grad_penalty": metrics.get("grad_penalty", 0.0),
+            "reward_mean": reward_mean,
+        }
+
+        self.gail_policy_obs.clear()
+        self.gail_policy_actions.clear()
+        self.raw_rewards_buf.fill(0.0)
 
     def _init_obs_window(self, norm_obs: np.ndarray) -> None:
         norm_obs = norm_obs.astype(np.float32)
@@ -223,6 +292,16 @@ class PPOTrainer:
             mujoco.mj_forward(self.env.model, data)
         except Exception:
             pass
+    
+    # TODO: 检查此函数什么意思？_extract_env_obs（:233-241）用于在不改 checkpoint 的前提下从 MuJoCo 数据里还原 raw obs。
+    def _extract_env_obs(self) -> np.ndarray:
+        data = getattr(self.env, "data", None)
+        if data is None:
+            raise RuntimeError("Environment data buffer unavailable for observation extraction.")
+        qpos = np.array(data.qpos[:8], dtype=np.float32)
+        qvel = np.array(data.qvel[:8], dtype=np.float32)
+        obstacle = np.array(data.qpos[12:20], dtype=np.float32)
+        return np.concatenate([qpos, qvel, obstacle]).astype(np.float32)
 
     def save_checkpoint(self, update_idx: int, total_timesteps: int) -> str:
         if self.obs_window is not None:
@@ -296,6 +375,7 @@ class PPOTrainer:
                     continue
                 if key == "iterations":
                     try:
+                        # TODO：iterations 被强制设为“旧/新取最大”，无法通过命令行缩短继续训练的轮数；可以允许调用者在 load_checkpoint 之后显式覆写迭代上限，避免必须跑满历史值 (learning_agent_ppo.py (lines 297-301))。
                         self.cfg.iterations = max(int(value), int(self.cfg.iterations))
                     except Exception:
                         self.cfg.iterations = int(self.cfg.iterations)
@@ -377,6 +457,10 @@ class PPOTrainer:
 
         env_state = checkpoint.get("env_state")
         self._apply_env_state(env_state)
+        try:
+            self.last_raw_obs = self._extract_env_obs()
+        except Exception:
+            self.last_raw_obs = None
 
         self.start_update_idx = int(checkpoint.get("update_idx", 0))
         total_timesteps = checkpoint.get("total_timesteps")
@@ -401,6 +485,10 @@ class PPOTrainer:
         obs = start_obs.astype(np.float32)
         if self.obs_window is None:
             self._init_obs_window(obs)
+        raw_obs = self.last_raw_obs.copy() if self.last_raw_obs is not None else np.zeros_like(obs)
+        if self.cfg.use_gail and self.gail_module is not None:
+            self.gail_policy_obs = []
+            self.gail_policy_actions = []
         last_done = False
         last_terminated = False
         last_truncated = False
@@ -416,6 +504,10 @@ class PPOTrainer:
             log_prob = float(log_prob_tensor.cpu().item())
             value = float(value_tensor.cpu().item())
 
+            if self.cfg.use_gail and self.gail_module is not None:
+                self.gail_policy_obs.append(raw_obs.copy())
+                self.gail_policy_actions.append(action.copy())
+
             next_obs, reward, terminated, truncated, info = self.env.step(action)
             last_terminated = bool(terminated)
             last_truncated = bool(truncated)
@@ -423,8 +515,10 @@ class PPOTrainer:
 
             self.obs_buf[step] = obs_seq
             self.actions_buf[step] = action
-            norm_reward = self._normalize_reward(reward)
-            self.rewards_buf[step] = norm_reward
+            self.raw_rewards_buf[step] = reward
+            if not self.cfg.use_gail or self.gail_module is None:
+                norm_reward = self._normalize_reward(reward)
+                self.rewards_buf[step] = norm_reward
             self.dones_buf[step] = float(last_done)
             self.values_buf[step] = value
             self.logprobs_buf[step] = log_prob
@@ -435,6 +529,8 @@ class PPOTrainer:
             norm_next_obs = self._normalize_obs(next_obs)
             self.obs_window.append(norm_next_obs)
             obs = norm_next_obs
+            raw_obs = next_obs.copy()
+            self.last_raw_obs = raw_obs.copy()
             last_terminated_step = 0
             if last_terminated:
                 # 只有双方得分导致的episode结束时才更新reward
@@ -451,9 +547,11 @@ class PPOTrainer:
             if last_done:
                 obs, _ = self.env.reset()
                 obs = obs.astype(np.float32)
+                self.last_raw_obs = obs.copy()
                 norm_reset_obs = self._normalize_obs(obs)
                 self._init_obs_window(norm_reset_obs)
                 obs = norm_reset_obs
+                raw_obs = self.last_raw_obs.copy()
 
         return obs, last_done
 
@@ -525,6 +623,11 @@ class PPOTrainer:
             obs = self.last_obs.astype(np.float32)
             if len(self.obs_window) != self.cfg.sequence_length:
                 self._init_obs_window(obs)
+            if self.last_raw_obs is None:
+                try:
+                    self.last_raw_obs = self._extract_env_obs()
+                except Exception:
+                    self.last_raw_obs = np.zeros_like(obs)
         else:
             raw_obs, _ = self.env.reset(seed=self.cfg.seed)
             raw_obs = raw_obs.astype(np.float32)
@@ -532,6 +635,7 @@ class PPOTrainer:
             self._init_obs_window(norm_obs)
             obs = norm_obs
             self.last_obs = obs.copy()
+            self.last_raw_obs = raw_obs.copy()
             self.last_done = False
 
         total_updates = self.cfg.iterations
@@ -547,6 +651,8 @@ class PPOTrainer:
             obs, last_done = self.collect_rollout(obs)
             self.last_obs = obs.copy()
             self.last_done = last_done
+            if self.cfg.use_gail and self.gail_module is not None:
+                self._apply_gail_rewards()
 
             with torch.no_grad():
                 if last_done:
@@ -609,6 +715,19 @@ class PPOTrainer:
                 f"----------------------------------------\n"
                 f"train：\n"
             )
+
+            if self.cfg.use_gail and self.last_gail_metrics:
+                print(
+                    f"GAIL metrics | "
+                    f"expert_loss {self.last_gail_metrics.get('expert_loss', 0.0):.4f} | "
+                    f"policy_loss {self.last_gail_metrics.get('policy_loss', 0.0):.4f} | "
+                    f"reward_mean {self.last_gail_metrics.get('reward_mean', 0.0):.4f}"
+                    + (
+                        f" | grad_penalty {self.last_gail_metrics.get('grad_penalty', 0.0):.4f}"
+                        if self.cfg.gail_grad_penalty > 0.0
+                        else ""
+                    )
+                )
 
             if self.checkpoint_interval > 0 and update % self.checkpoint_interval == 0:
                 self.save_checkpoint(update, total_timesteps)

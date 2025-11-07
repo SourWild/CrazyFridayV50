@@ -25,11 +25,11 @@ def parse_args() -> argparse.Namespace:
         default="periodic",
         help="Obstacle controller mode passed to the environment (default: periodic).",
     )
-    parser.add_argument(
-        "--total-timesteps",
-        type=int,
-        help="Override PPO total training timesteps (default: 600000).",
-    )
+    # parser.add_argument(
+    #     "--total-timesteps",
+    #     type=int,
+    #     help="Override PPO total training timesteps (default: 600000).",
+    # )
     parser.add_argument(
         "--seed",
         type=int,
@@ -50,6 +50,52 @@ def parse_args() -> argparse.Namespace:
         type=str,
         help="Path to a checkpoint file to resume training from.",
     )
+    parser.add_argument(
+        "--use-gail",
+        action="store_true",
+        help="Enable Generative Adversarial Imitation Learning with expert demonstrations.",
+    )
+    parser.add_argument(
+        "--expert-path",
+        type=str,
+        help="Path to expert dataset (CSV/NPZ) with obs+action+flags for GAIL.",
+    )
+    parser.add_argument(
+        "--gail-batch-size",
+        type=int,
+        help="Batch size for each GAIL discriminator update (default: config setting).",
+    )
+    parser.add_argument(
+        "--gail-iters",
+        type=int,
+        help="Number of discriminator steps per PPO update (default: config setting).",
+    )
+    parser.add_argument(
+        "--gail-hidden-dims",
+        type=int,
+        nargs="+",
+        help="Hidden layer sizes for the GAIL discriminator MLP.",
+    )
+    parser.add_argument(
+        "--gail-learning-rate",
+        type=float,
+        help="Learning rate for the GAIL discriminator optimizer.",
+    )
+    parser.add_argument(
+        "--gail-reward-scale",
+        type=float,
+        help="Scaling factor applied to the discriminator-based reward (default: 1.0).",
+    )
+    parser.add_argument(
+        "--gail-mix-ratio",
+        type=float,
+        help="Ratio between GAIL reward and environment reward (1.0 = pure GAIL).",
+    )
+    parser.add_argument(
+        "--gail-grad-penalty",
+        type=float,
+        help="Coefficient for gradient penalty regularization in the discriminator.",
+    )
     return parser.parse_args()
 
 
@@ -65,14 +111,32 @@ def main() -> None:
 
     config = PPOConfig()
 
-    if args.total_timesteps is not None:
-        config.total_timesteps = args.total_timesteps
+    total_timesteps = getattr(args, "total_timesteps", None)
+    if total_timesteps is not None:
+        config.total_timesteps = total_timesteps
     if args.seed is not None:
         config.seed = args.seed
     if args.checkpoint_interval is not None:
         config.checkpoint_interval = max(1, args.checkpoint_interval)
     if args.checkpoint_root is not None:
         config.checkpoint_root = args.checkpoint_root
+    config.use_gail = args.use_gail
+    if args.expert_path is not None:
+        config.expert_data_path = args.expert_path
+    if args.gail_batch_size is not None:
+        config.gail_batch_size = max(1, args.gail_batch_size)
+    if args.gail_iters is not None:
+        config.gail_update_iters = max(1, args.gail_iters)
+    if args.gail_hidden_dims:
+        config.gail_hidden_dims = tuple(int(h) for h in args.gail_hidden_dims)
+    if args.gail_learning_rate is not None:
+        config.gail_learning_rate = float(args.gail_learning_rate)
+    if args.gail_reward_scale is not None:
+        config.gail_reward_scale = float(args.gail_reward_scale)
+    if args.gail_mix_ratio is not None:
+        config.gail_mix_ratio = float(args.gail_mix_ratio)
+    if args.gail_grad_penalty is not None:
+        config.gail_grad_penalty = float(args.gail_grad_penalty)
 
     if model_id == "lstm":
         policy_kwargs = {"lstm_hidden_size": config.lstm_hidden_size}
